@@ -33,106 +33,142 @@ library(caret)
 library(georob)
 library(gstat)
 
-
 ```
 
 ```{r}
 
 # Sistemas de referência de coordenadas (Fonte: http://spatialreference.org/ref/epsg/)
 wgs84utm21s <- sp::CRS('+proj=utm +zone=21 +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
-sirgas2000 <- sp::CRS('+proj=longlat +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +no_defs')
+wgs84 <- sp::CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
+#sirgas2000 <- sp::CRS('+proj=longlat +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +no_defs')
 
 # Definir rampas de cores
   col_soil_var1 <- topo.colors(100)
-  col_soil_var2 <- terrain.colors(100)
+  #col_soil_var2 <- terrain.colors(100)
 
 ```
 
 ```{r}
-# Carregar dados 
 
-pontos <- read.csv('../data/pontos-261-srad.csv', sep = ";", dec = ".", h=T)
-sp::coordinates(pontos) <- c('x', 'y')
-#str(pontos)
-sp::proj4string(pontos)<-wgs84utm21s
-#pontos@data
-pontos <- sp::spTransform(pontos, wgs84utm21s)
+data_folder <- '../data/'
+ext <- c('dbf', 'prj', 'shp', 'shx')
+files <- glue('uso.{ext}')
+download <- !all(files %in% list.files(data_folder)) 
 
 ```
 
+```{r}
+uso <- 
+  glue('{data_folder}uso.shp') %>% 
+  raster::shapefile(stringsAsFactors = TRUE) %>% 
+  sp::spTransform(wgs84)
+str(uso, 2)
+
+```
+
+```{r}
+sp::spplot(
+  uso, scales = list(draw = TRUE), col.regions = terrain.colors(nlevels(uso$uso)),
+main = "Mapa de uso da terra")
+
+```
+
+```{r}
+# Carregar dados "planilha .csv"
+pontos <- read.csv('../data/pontos-261-srad.csv', sep = ";", dec = ".", h=T)
+sp::coordinates(pontos) <- c('x', 'y')
+sp::proj4string(pontos) <- wgs84utm21s
+
+pontos <- sp::spTransform(pontos, wgs84)
+pontos@data
+```
 ```{r, fig.asp=1}
+# estatística descritiva dos pontos
 summary(pontos)
 hist(pontos$soc)
+
+## transformação do dados pelo método BoxCox
 pontos$socbx <- fifer::boxcoxR(pontos$soc)
-str(pontos)
 hist(pontos$socbx)
 ```
 
 ```{r}
-# carregar raster e shapes
-ELEV <- raster::raster('../data/ELEV.tif')
-sp::proj4string(ELEV)<-wgs84utm21s
-
-DECL <- raster::raster('../data/DECL.tif')
-sp::proj4string(DECL)<-wgs84utm21s
-
-SAVI <- raster::raster('../data/SAVI.tif')
-sp::proj4string(SAVI)<-wgs84utm21s
-
-B456 <- raster::raster('../data/B456.tif')
-sp::proj4string(B456)<-wgs84utm21s
-
-#uso <- raster::shapefile('../data/classes_cobertura_solo_micro_bacia.shp')
-#uso <- sp::spTransform(uso, wgs84utm21s)
-
-limite <- raster::shapefile('../data/limite_area_girua.shp')
-limite <- sp::spTransform(limite, wgs84utm21s)
-
-# para verificar se os rasters são iguais 
-#compareRaster(elev, decli)
-```
-
-```{r}
-
-uso$id <- as.factor(uso$id)
-sp::spplot(uso, scales = list(draw = TRUE)) +
-  lattice::xyplot(y ~ x, data = as.data.frame(pontos@coords), 
-                  pch = 20, col = 'red', lwd = 2, cex = 2) %>% 
+# gerar mapa com os pontos de observação
+sp::spplot(
+  uso, scales = list(draw = TRUE), 
+  xlim = extendrange(c(pontos@bbox[1, ], uso@bbox[1, ])),
+  ylim = extendrange(c(pontos@bbox[2, ], uso@bbox[2, ])),
+  col.regions = terrain.colors(nlevels(uso$uso)),
+main = "Localização das 261 observações") +
+  lattice::xyplot(y ~ x, data = as.data.frame(pontos@coords), pch = 20, col = 'black') %>% 
   latticeExtra::as.layer()
+
+```
+```{r}
+## carregar raster
+
+elev <- raster::raster('../data/elev.tif')
+sp::proj4string(elev)<-wgs84
+
+decli <- raster::raster('../data/decli.tif')
+sp::proj4string(decli)<-wgs84
+
+vertnum <- raster::raster('../data/vertnum.tif')
+sp::proj4string(vertnum)<-wgs84
+
+horiznum <- raster::raster('../data/horiznum.tif')
+sp::proj4string(vertnum)<-wgs84
+
+savi <- raster::raster('../data/savi.tif')
+sp::proj4string(savi)<-wgs84
+
+uso <- raster::raster('../data/uso.tif')
+sp::proj4string(uso)<-wgs84
+plot(uso)
+
+
+
 ```
 
 ```{r}
-pontos$ELEV <- raster::extract(ELEV, pontos)
+# extrair valores da covariávies para o pontos
 
-pontos$DECL <- raster::extract(DECL, pontos)
+pontos$elev <- raster::extract(elev, pontos)
 
-pontos$SAVI <- raster::extract(SAVI, pontos)
+pontos$decli <- raster::extract(decli, pontos)
 
-pontos$B456 <- raster::extract(B456, pontos)
+pontos$vertnum <- raster::extract(vertnum, pontos)
 
-#pontos$uso <- sp::over(x = pontos, y = uso) %>% unlist()
+pontos$horiznum <- raster::extract(horiznum, pontos)
 
+pontos$savi <- raster::extract(savi, pontos)
 
-
-```
-
-```{r}
-soc_rf <- caret::train((soc ~ ELEV), data = pontos@data, method = "rf", tuneLength = 1, ntree = 100, importance = TRUE, na.action = na.omit, trControl = trainControl("LOOCV"))
-
+pontos$uso <- raster::extract(uso, pontos) %>% as.factor()
+pontos@data
 
 ```
 
 ```{r}
+soc_rf <- caret::train((soc ~ elev + decli + vertnum + horiznum + savi + uso), data = pontos@data, method = "rf", tuneLength = 1, ntree = 100, importance = TRUE, na.action = na.omit, trControl = trainControl("LOOCV"))
+
+```
+
+```{r}
+figura <- par(mfrow = c(2, 2))
 pontos@data$socpred <- soc_rf$finalModel$predicted
-stats::lm(soc ~ socpred, data= pontos) %>% 
-plot()
+fig <- stats::lm(soc ~ socpred, data= pontos) 
+plot(fig, which = 1:4)
+
+```
+```{r}
+par(figura)
 ```
 
 ```{r}
 
 beginCluster()
 prediction <-
-  clusterR(brick(ELEV), raster::predict, args = list(model = soc_rf, type = 'raw', inde = 1))
+  clusterR(brick(elev, decli, vertnum, horiznum, savi, uso), raster::predict, args = list(model = soc_rf, type = 'raw', inde = 1))
 endCluster()
 plot(prediction)
 ```
@@ -197,7 +233,7 @@ colnames(grid@coords) <- colnames(pontos@coords)
 ```{r}
 grid$socprediction <- raster::extract(prediction, grid)
 
-grid$B456 <- raster::extract(B456, grid)
+#grid$B456 <- raster::extract(B456, grid)
 ```
 
 

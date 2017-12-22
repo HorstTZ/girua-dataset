@@ -174,7 +174,7 @@ plot(prediction)
 ```
 
 ```{r}
-pontos$prediction <- raster::extract(prediction, pontos)
+pontos$socprediction <- raster::extract(prediction, pontos)
 pontos@data
 str(pontos)
 
@@ -188,7 +188,7 @@ distmax <- dist(pontos@coords) %>%
 
 ```{r}
 limites <- seq(0, distmax, length.out = 10)
-vario <- georob::sample.variogram(socbx ~ prediction, data = pontos,
+vario <- georob::sample.variogram(socbx ~ socprediction, data = pontos,
     locations = ~ x + y, lag.dist.def = limites, estimador = 'matheron') %>% 
   plot(ylab = 'Semivariância', xlab = 'Distância de separação (m)', annotate.npairs = T)
 ```
@@ -208,7 +208,7 @@ lines(vario_fit, col = 'red', lty = 'dashed')
 
 ```{r}
 vario_fit_error <- georob::georob(
-   socbx ~ prediction, pontos, locations = ~ x + y, variogram.model = 'RMexp', 
+   socbx ~ socprediction, pontos, locations = ~ x + y, variogram.model = 'RMexp', 
  param = c(variance = vario_fit$variogram.object[[1]]$param[['variance']], 
            nugget = vario_fit$variogram.object[[1]]$param[['nugget']]*0.66,
            snugget = vario_fit$variogram.object[[1]]$param[['nugget']]*0.33,
@@ -231,7 +231,7 @@ colnames(grid@coords) <- colnames(pontos@coords)
 ```
 
 ```{r}
-grid$socprediction <- raster::extract(prediction, grid)
+grid$socpredictionfinal <- raster::extract(prediction, grid)
 
 #grid$B456 <- raster::extract(B456, grid)
 ```

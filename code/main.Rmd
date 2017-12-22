@@ -30,6 +30,8 @@ library(lattice)
 library(sp)
 library(raster)
 library(caret)
+library(georob)
+library(gstat)
 
 ```
 
@@ -37,124 +39,221 @@ library(caret)
 
 # Sistemas de referência de coordenadas (Fonte: http://spatialreference.org/ref/epsg/)
 wgs84utm21s <- sp::CRS('+proj=utm +zone=21 +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
-sirgas2000 <- sp::CRS('+proj=longlat +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +no_defs')
+wgs84 <- sp::CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
+#sirgas2000 <- sp::CRS('+proj=longlat +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +no_defs')
 
 # Definir rampas de cores
   col_soil_var1 <- topo.colors(100)
-  col_soil_var2 <- terrain.colors(100)
+  #col_soil_var2 <- terrain.colors(100)
 
 ```
 
 ```{r}
-# Carregar dados 
 
-pontos <- read.csv('../data/pontos-261-srad.csv', sep = ";", dec = ".", h=T)
-sp::coordinates(pontos) <- c('x', 'y')
-#str(pontos)
-sp::proj4string(pontos)<-wgs84utm21s
-#pontos@data
-pontos <- sp::spTransform(pontos, wgs84utm21s)
+data_folder <- '../data/'
+ext <- c('dbf', 'prj', 'shp', 'shx')
+files <- glue('uso.{ext}')
+download <- !all(files %in% list.files(data_folder)) 
 
 ```
 
+```{r}
+uso <- 
+  glue('{data_folder}uso.shp') %>% 
+  raster::shapefile(stringsAsFactors = TRUE) %>% 
+  sp::spTransform(wgs84)
+str(uso, 2)
+
+```
+
+```{r}
+sp::spplot(
+  uso, scales = list(draw = TRUE), col.regions = terrain.colors(nlevels(uso$uso)),
+main = "Mapa de uso da terra")
+
+```
+
+```{r}
+# Carregar dados "planilha .csv"
+pontos <- read.csv('../data/pontos-261-srad.csv', sep = ";", dec = ".", h=T)
+sp::coordinates(pontos) <- c('x', 'y')
+sp::proj4string(pontos) <- wgs84utm21s
+
+pontos <- sp::spTransform(pontos, wgs84)
+pontos@data
+```
 ```{r, fig.asp=1}
+# estatística descritiva dos pontos
 summary(pontos)
 hist(pontos$soc)
+
+## transformação do dados pelo método BoxCox
 pontos$socbx <- fifer::boxcoxR(pontos$soc)
-str(pontos)
 hist(pontos$socbx)
 ```
 
 ```{r}
-# carregar raster e shapes
-elev <- raster::raster('../data/ELEV.tif')
-sp::proj4string(elev)<-wgs84utm21s
-
-decli <- raster::raster('../data/DECL.tif')
-sp::proj4string(decli)<-wgs84utm21s
-
-savi <- raster::raster('../data/SAVI.tif')
-sp::proj4string(savi)<-wgs84utm21s
-
-b456 <- raster::raster('../data/B456.tif')
-sp::proj4string(b456)<-wgs84utm21s
-
-uso <- raster::shapefile('../data/classes_cobertura_solo_micro_bacia.shp')
-uso <- sp::spTransform(uso, wgs84utm21s)
-```
-
-```{r}
-
-uso$id <- as.factor(uso$id)
-sp::spplot(uso, scales = list(draw = TRUE)) +
-  lattice::xyplot(y ~ x, data = as.data.frame(pontos@coords), 
-                  pch = 20, col = 'red', lwd = 2, cex = 2) %>% 
+# gerar mapa com os pontos de observação
+sp::spplot(
+  uso, scales = list(draw = TRUE), 
+  xlim = extendrange(c(pontos@bbox[1, ], uso@bbox[1, ])),
+  ylim = extendrange(c(pontos@bbox[2, ], uso@bbox[2, ])),
+  col.regions = terrain.colors(nlevels(uso$uso)),
+main = "Localização das 261 observações") +
+  lattice::xyplot(y ~ x, data = as.data.frame(pontos@coords), pch = 20, col = 'black') %>% 
   latticeExtra::as.layer()
+
+```
+```{r}
+## carregar raster
+
+elev <- raster::raster('../data/elev.tif')
+sp::proj4string(elev)<-wgs84
+
+decli <- raster::raster('../data/decli.tif')
+sp::proj4string(decli)<-wgs84
+
+vertnum <- raster::raster('../data/vertnum.tif')
+sp::proj4string(vertnum)<-wgs84
+
+horiznum <- raster::raster('../data/horiznum.tif')
+sp::proj4string(vertnum)<-wgs84
+
+savi <- raster::raster('../data/savi.tif')
+sp::proj4string(savi)<-wgs84
+
+uso <- raster::raster('../data/uso.tif')
+sp::proj4string(uso)<-wgs84
+plot(uso)
+
+
+
 ```
 
 ```{r}
+# extrair valores da covariávies para o pontos
+
 pontos$elev <- raster::extract(elev, pontos)
 
 pontos$decli <- raster::extract(decli, pontos)
 
+pontos$vertnum <- raster::extract(vertnum, pontos)
+
+pontos$horiznum <- raster::extract(horiznum, pontos)
+
 pontos$savi <- raster::extract(savi, pontos)
 
-pontos$b456 <- raster::extract(b456, pontos)
-
-pontos$uso <- sp::over(x = pontos, y = uso) %>% unlist()
-
-
+pontos$uso <- raster::extract(uso, pontos) %>% as.factor()
+pontos@data
 
 ```
 
 ```{r}
-soc_rf <- caret::train((soc ~ elev + decli + savi + b456), data = pontos@data, method = "rf", tuneLength = 1, ntree = 100, importance = TRUE, na.action = na.omit, trControl = trainControl("LOOCV"))
-
-soc_rf$finalModel
-
+soc_rf <- caret::train((soc ~ elev + decli + vertnum + horiznum + savi + uso), data = pontos@data, method = "rf", tuneLength = 1, ntree = 100, importance = TRUE, na.action = na.omit, trControl = trainControl("LOOCV"))
 
 ```
 
 ```{r}
+figura <- par(mfrow = c(2, 2))
 pontos@data$socpred <- soc_rf$finalModel$predicted
-stats::lm(soc ~ socpred, data= pontos) %>% 
-plot()
+fig <- stats::lm(soc ~ socpred, data= pontos) 
+plot(fig, which = 1:4)
+
 ```
 ```{r}
+par(figura)
+```
 
-grid <- sp::spsample(uso, 10000, type = 'regular')
-plot(grid@coords, asp=1)
-str(grid)
+```{r}
 
-
-grid <- raster::spsample(, 10000, type = 'regular')
-plot(grid@coords, asp=1)
 beginCluster()
 prediction <-
-  clusterR(brick(elev, decli, savi, b456), raster::predict, args = list(model = soc_rf, type = 'raw', inde =1))
+  clusterR(brick(elev, decli, vertnum, horiznum, savi, uso), raster::predict, args = list(model = soc_rf, type = 'raw', inde = 1))
 endCluster()
 plot(prediction)
 ```
 
 ```{r}
-grid <- sp::SpatialPointsDataFrame(
-  coords = grid@coords,
-  data = data.frame(
-    elev = raster::extract(elev, grid) %>% unlist(),
-    decli = raster::extract(decli, grid) %>% unlist(),
-    savi = raster::extract(savi, grid) %>% unlist(),
-    b456 = raster::extract(b456, grid) %>% unlist(),
-    uso = sp::over(grid, uso) %>% unlist()),
-    proj4string = grid@proj4string)
+pontos$prediction <- raster::extract(prediction, pontos)
+pontos@data
+str(pontos)
 
-colnames(grid@coords) <- colnames(pontos@coords)
-
-str(grid)
 ```
 
 ```{r}
-grid$rf <- raster::predict(soc_rf, grid)
-sp::spplot(grid, 'rf')
+distmax <- dist(pontos@coords) %>% 
+  max()/3
 
+```
+
+```{r}
+limites <- seq(0, distmax, length.out = 10)
+vario <- georob::sample.variogram(socbx ~ prediction, data = pontos,
+    locations = ~ x + y, lag.dist.def = limites, estimador = 'matheron') %>% 
+  plot(ylab = 'Semivariância', xlab = 'Distância de separação (m)', annotate.npairs = T)
+```
+
+```{r}
+vario_fit <-
+  georob::fit.variogram.model(vario, variogram.model = 'RMspheric', param = c(variance = 0.05, nugget = 0.03, scale = 0.02),  weighting.method = "cressie", method = 'BFGS')
+summary(vario_fit)
+```
+
+```{r}
+plot(vario, type = 'b')
+lines(vario_fit, col = 'red', lty = 'dashed')
+
+
+```
+
+```{r}
+vario_fit_error <- georob::georob(
+   socbx ~ prediction, pontos, locations = ~ x + y, variogram.model = 'RMexp', 
+ param = c(variance = vario_fit$variogram.object[[1]]$param[['variance']], 
+           nugget = vario_fit$variogram.object[[1]]$param[['nugget']]*0.66,
+           snugget = vario_fit$variogram.object[[1]]$param[['nugget']]*0.33,
+           scale = vario_fit$variogram.object[[1]]$param[['scale']]),
+ fit.param = georob::default.fit.param(nugget = FALSE, snugget = FALSE),
+ tuning.psi = 1000, control = georob::control.georob(initial.fixef = 'lm'))
+summary(vario_fit_error)
+```
+
+```{r}
+plot(vario)
+lines(vario_fit_error)
+```
+
+```{r}
+
+grid <- sp::spsample(limite, 10000, type = 'regular')
+plot(grid@coords, asp=1)
+colnames(grid@coords) <- colnames(pontos@coords)
+```
+
+```{r}
+grid$socprediction <- raster::extract(prediction, grid)
+
+#grid$B456 <- raster::extract(B456, grid)
+```
+
+
+```{r}
+grid <- 
+ sp::SpatialPointsDataFrame(
+   coords = grid@coords, 
+   data = data.frame(grid),
+   proj4string = grid@proj4string)
+colnames(grid@coords) <- colnames(pontos@coords)
+```
+
+```{r}
+pred_ponto <- predict(vario_fit_error, newdata = grid, na.action = na.omit, control = georob::control.predict.georob(extended.output = TRUE))
+sp::gridded(pred_ponto) <- TRUE
+sp::spplot(pred_ponto)
+
+```
+
+```{r}
+pred_ponto <- predict(soc_rf, newdata = grid, control = georob::control.predict.georob(extended.output = TRUE)) sp::gridded(pred_ponto) <- TRUE str(pred_ponto)
 ```
 

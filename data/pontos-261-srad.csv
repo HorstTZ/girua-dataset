@@ -1,4 +1,4 @@
-id;x;y;camada;soc;mos;uso;solo;clay;silt;sand
+id;x;y;camada;soc;mos;cobertura;solo;clay;silt;sand
 1;756591.426;6896720.21;1;2.01;3.47;lavoura;latossolo vermelho;48;34;18
 2;755958.581;6896464.092;1;2.78;4.79;lavoura;latossolo vermelho;56;34;10
 3;755547.582;6895320.433;1;2.88;4.96;lavoura;latossolo vermelho;53;29;18

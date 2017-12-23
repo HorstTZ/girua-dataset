@@ -22,8 +22,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, echo=FALSE, include=FALSE}
 
-# Pacotes 
-rm(list = ls())
+# Carregar pacotes 
+
 library(magrittr)
 library(dplyr)
 library(glue)
@@ -42,16 +42,20 @@ install.packages("")
 ```{r}
 
 # Sistemas de referência de coordenadas (Fonte: http://spatialreference.org/ref/epsg/)
+
 wgs84utm21s <- sp::CRS('+proj=utm +zone=21 +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
 wgs84 <- sp::CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
 
-# Definir rampas de cores
+# Definir rampa de cores
   col_soil_var1 <- topo.colors(100)
  
 ```
 
-```{r}
+Os dados utilizados para realizar essa atividade foram obtigos em uma área de ~ 940 ha no município de Giruá. As amostras de solo foram coletadas em 261 pontos na camada de 0-5 cm de forma intencional. O suporte amostral foi em BLOCO (área de ~ 36 m^2), no entanto, para reliazar a atividade foi assumido que o suporte amostral foi de PONTO. 
+Nessa atividade foi realizada a predição da variável de solo "Carbono Orgânico do Solo" utilizando o Modelo Linar Misto de Variação Especia. No final da atividade foi realizada uma simulação sequencial gaussiana condicional.
 
+```{r}
+# Carregar arquivo vetorial referente ao uso da terra de Giruá
 data_folder <- '../data/'
 ext <- c('dbf', 'prj', 'shp', 'shx')
 files <- glue('uso-da-terra.{ext}')
@@ -60,6 +64,8 @@ download <- !all(files %in% list.files(data_folder))
 ```
 
 ```{r}
+# Gerar mapa do uso da terra 
+
 cobertura <- 
   glue('{data_folder}uso-da-terra.shp') %>% 
   raster::shapefile(stringsAsFactors = TRUE) %>% 
@@ -76,7 +82,8 @@ main = "Mapa de uso da terra")
 ```
 
 ```{r}
-# Carregar dados "planilha .csv"
+# Carregar planilha contento variáveis dos 261 pontos de amostragem, camada 0 - 5 cm
+
 pontos <- read.csv('../data/pontos-261-1.csv', sep = ";", dec = ".", h=T)
 sp::coordinates(pontos) <- c('x', 'y')
 sp::proj4string(pontos) <- wgs84utm21s
@@ -87,13 +94,17 @@ pontos@data
 ```
 
 ```{r, fig.asp=1}
-# estatística descritiva dos pontos
+# estatística descritiva dos pontos de carbono orgânico do solo (soc)
+op <- par(mfrow = c(1, 2))
 summary(pontos)
 hist(pontos$soc)
+boxplot(pontos$soc)
+par (op)
 ```
 
 ```{r}
-# gerar mapa com os pontos de observação
+# Gerar mapa de uso da terra com os 261 pontos de amostragem
+
 sp::spplot(
   cobertura, scales = list(draw = TRUE), 
   xlim = extendrange(c(pontos@bbox[1, ], cobertura@bbox[1, ])),
@@ -106,9 +117,9 @@ main = "Localização das 261 observações") +
 ```
 
 ```{r}
-## carregar covariáveis preditoras
+## carregar covariáveis preditoras obtidas no TOPODATA (30 m)
 
-elev <- raster::raster('../data/elev.tif')
+elev <- raster::raster('../data/ELEV.tif')
 sp::proj4string(elev)<-wgs84
 
 decli <- raster::raster('../data/decli.tif')
@@ -126,7 +137,7 @@ sp::proj4string(uso)<-wgs84
 ```
 
 ```{r}
-# extrair valores da covariávies para os pontos
+# extrair valores da covariávies para os 261 pontos
 
 pontos$elev <- raster::extract(elev, pontos)
 
@@ -143,11 +154,15 @@ pontos@data
 ```
 
 ```{r}
-soc_rf <- caret::train((soc ~ elev + decli + vertnum + horiznum + uso), data = pontos@data, method = "rf", tuneLength = 1, ntree = 100, importance = TRUE, na.action = na.omit, trControl = trainControl("LOOCV"))
+# criar modelo de predição de SOC por Randon Forest 
+
+soc_rf <- caret::train((soc ~ elev + decli + vertnum + horiznum + uso), data = pontos@data, method = "rf", tuneLength = 1, ntree = 500, importance = TRUE, na.action = na.omit, trControl = trainControl("LOOCV"))
 
 ```
 
 ```{r}
+# gerar gráfico para viasualização dos resíduos da predição
+
 op <- par(mfrow = c(2, 2))
 pontos@data$socpred <- soc_rf$finalModel$predicted
 fig <- stats::lm(soc ~ socpred, data= pontos) 
@@ -158,6 +173,9 @@ par(op)
 ```
 
 ```{r}
+
+# Fazer a predição espacial para toda área a partir do modelo gerado - soc_rf
+
 beginCluster()
 prediction <-
   clusterR(brick(elev, decli, vertnum, horiznum, uso), raster::predict, args = list(model = soc_rf, type = 'raw', inde = 1))
@@ -167,14 +185,19 @@ plot(prediction, main = "Mapa de carbono orgânico - modelo determinístico")
 ```
 
 ```{r}
+# Criar o objeto "socprediction" na arquivo "pontos"
+
 pontos$socprediction <- raster::extract(prediction, pontos)
 pontos@data
 
 ```
 
 ```{r}
+# Calcular a distância em entre pontos e gerar o varigrama amostral
 distmax <- dist(pontos@coords) %>% 
   max()/4
+
+# Construir o Modelo Linear Misto de Variação Espacial
 
 limites <- seq(0, distmax, length.out = 10)
 vario <- georob::sample.variogram(soc ~ socprediction, data = pontos,
@@ -183,6 +206,10 @@ vario <- georob::sample.variogram(soc ~ socprediction, data = pontos,
 ```
 
 ```{r}
+# Ajuste do variograma amostral a um modelo exponencial 
+# Foi utilizdo O método dos quadrados mínimos não-lineares ponderados, sendo a ponderação definida conforme o método de "Cressie"
+# As estimativas dos parâmetros do modelo foi realizada pelo método "BFGS"
+
 vario_fit <-
   georob::fit.variogram.model(vario, variogram.model = 'RMexp', param = c(variance = 1.3, nugget = 0.5, scale = 1.7),  weighting.method = "cressie", method = 'BFGS')
 summary(vario_fit)
@@ -196,6 +223,9 @@ lines(vario_fit, col = 'blue', lty = 'dashed')
 ```
 
 ```{r, warning=FALSE}
+# Ajuste do variograma com a sepração da variância estrutural (snugget) e não estrutural (nugget)
+# foi fixado o snugget em 0.0025, sendo esse valor referente ao erro de análise de laboratório
+
 vario_fit_error <- georob::georob(
    soc ~ socprediction, pontos, locations = ~ x + y, variogram.model = 'RMexp', 
  param = c(variance = vario_fit$variogram.object[[1]]$param[['variance']], 
@@ -214,13 +244,15 @@ lines(vario_fit_error, col = "red", lty = 'dashed')
 ```
 
 ```{r}
-
+# criar grid para realizar a predição pelo Modelo Linear Misto de Variação Espacial
 grid <- sp::spsample(cobertura, 10000, type = 'regular')
 plot(grid@coords, asp=1)
 colnames(grid@coords) <- colnames(pontos@coords)
 ```
 
 ```{r}
+# Inserir o valor predido "prediction" no grid
+
 grid$socprediction <- raster::extract(prediction, grid)
 
 ```
@@ -245,6 +277,8 @@ plot(pred_ponto, main = "Mapa de carbono orgânico gerado pelo modelo linear mis
 ```
 
 ```{r, fig.asp=1}
+# validar o mapa utilizando os 261-1 pontos
+
 validacao <- georob::cv(vario_fit_error, nset = 260)
 summary(validacao)
 1 - sum((validacao$pred$data - validacao$pred$pred)^2) / sum((validacao$pred$data - mean(validacao$pred$data))^2)
@@ -252,7 +286,7 @@ plot(validacao)
 ```
 
 ```{r}
-# Simulação espacial
+# Simulação sequencial gaussiana condicional (gstat)
 
 m_exp <- gstat::vgm(psill = 13.784, model = 'Exp', range = 2.11, nugget = 0.61)
 

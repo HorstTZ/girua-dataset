@@ -8,7 +8,8 @@ output: html_document
       #bibliography: biblio.bib
 csl: abnt.csl
 lang: pt
-
+editor_options: 
+  chunk_output_type: inline
 ---
 ```{r, eval=FALSE}
 rmarkdown::render('main.Rmd', encoding = 'UTF-8', output_dir = "../docs")
@@ -32,6 +33,9 @@ library(raster)
 library(caret)
 library(georob)
 library(gstat)
+library(fifer)
+library(gstat)
+install.packages("")
 
 ```
 
@@ -40,72 +44,69 @@ library(gstat)
 # Sistemas de referência de coordenadas (Fonte: http://spatialreference.org/ref/epsg/)
 wgs84utm21s <- sp::CRS('+proj=utm +zone=21 +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
 wgs84 <- sp::CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
-#sirgas2000 <- sp::CRS('+proj=longlat +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +no_defs')
 
 # Definir rampas de cores
   col_soil_var1 <- topo.colors(100)
-  #col_soil_var2 <- terrain.colors(100)
-
+ 
 ```
 
 ```{r}
 
 data_folder <- '../data/'
 ext <- c('dbf', 'prj', 'shp', 'shx')
-files <- glue('uso.{ext}')
+files <- glue('uso-da-terra.{ext}')
 download <- !all(files %in% list.files(data_folder)) 
 
 ```
 
 ```{r}
-uso <- 
-  glue('{data_folder}uso.shp') %>% 
+cobertura <- 
+  glue('{data_folder}uso-da-terra.shp') %>% 
   raster::shapefile(stringsAsFactors = TRUE) %>% 
   sp::spTransform(wgs84)
-str(uso, 2)
+str(cobertura, 2)
 
 ```
 
 ```{r}
 sp::spplot(
-  uso, scales = list(draw = TRUE), col.regions = terrain.colors(nlevels(uso$uso)),
+  cobertura, scales = list(draw = TRUE), col.regions = terrain.colors(nlevels(cobertura$uso)),
 main = "Mapa de uso da terra")
 
 ```
 
 ```{r}
 # Carregar dados "planilha .csv"
-pontos <- read.csv('../data/pontos-261-srad.csv', sep = ";", dec = ".", h=T)
+pontos <- read.csv('../data/pontos-261-1.csv', sep = ";", dec = ".", h=T)
 sp::coordinates(pontos) <- c('x', 'y')
 sp::proj4string(pontos) <- wgs84utm21s
-
+str(pontos)
 pontos <- sp::spTransform(pontos, wgs84)
 pontos@data
+
 ```
+
 ```{r, fig.asp=1}
 # estatística descritiva dos pontos
 summary(pontos)
 hist(pontos$soc)
-
-## transformação do dados pelo método BoxCox
-pontos$socbx <- fifer::boxcoxR(pontos$soc)
-hist(pontos$socbx)
 ```
 
 ```{r}
 # gerar mapa com os pontos de observação
 sp::spplot(
-  uso, scales = list(draw = TRUE), 
-  xlim = extendrange(c(pontos@bbox[1, ], uso@bbox[1, ])),
-  ylim = extendrange(c(pontos@bbox[2, ], uso@bbox[2, ])),
-  col.regions = terrain.colors(nlevels(uso$uso)),
+  cobertura, scales = list(draw = TRUE), 
+  xlim = extendrange(c(pontos@bbox[1, ], cobertura@bbox[1, ])),
+  ylim = extendrange(c(pontos@bbox[2, ], cobertura@bbox[2, ])),
+  col.regions = terrain.colors(nlevels(cobertura$uso)),
 main = "Localização das 261 observações") +
   lattice::xyplot(y ~ x, data = as.data.frame(pontos@coords), pch = 20, col = 'black') %>% 
   latticeExtra::as.layer()
 
 ```
+
 ```{r}
-## carregar raster
+## carregar covariáveis preditoras
 
 elev <- raster::raster('../data/elev.tif')
 sp::proj4string(elev)<-wgs84
@@ -119,19 +120,13 @@ sp::proj4string(vertnum)<-wgs84
 horiznum <- raster::raster('../data/horiznum.tif')
 sp::proj4string(vertnum)<-wgs84
 
-savi <- raster::raster('../data/savi.tif')
-sp::proj4string(savi)<-wgs84
-
 uso <- raster::raster('../data/uso.tif')
 sp::proj4string(uso)<-wgs84
-plot(uso)
-
-
 
 ```
 
 ```{r}
-# extrair valores da covariávies para o pontos
+# extrair valores da covariávies para os pontos
 
 pontos$elev <- raster::extract(elev, pontos)
 
@@ -141,77 +136,71 @@ pontos$vertnum <- raster::extract(vertnum, pontos)
 
 pontos$horiznum <- raster::extract(horiznum, pontos)
 
-pontos$savi <- raster::extract(savi, pontos)
-
 pontos$uso <- raster::extract(uso, pontos) %>% as.factor()
+
 pontos@data
 
 ```
 
 ```{r}
-soc_rf <- caret::train((soc ~ elev + decli + vertnum + horiznum + savi + uso), data = pontos@data, method = "rf", tuneLength = 1, ntree = 100, importance = TRUE, na.action = na.omit, trControl = trainControl("LOOCV"))
+soc_rf <- caret::train((soc ~ elev + decli + vertnum + horiznum + uso), data = pontos@data, method = "rf", tuneLength = 1, ntree = 100, importance = TRUE, na.action = na.omit, trControl = trainControl("LOOCV"))
 
 ```
 
 ```{r}
-figura <- par(mfrow = c(2, 2))
+op <- par(mfrow = c(2, 2))
 pontos@data$socpred <- soc_rf$finalModel$predicted
 fig <- stats::lm(soc ~ socpred, data= pontos) 
 plot(fig, which = 1:4)
 
-```
-```{r}
-par(figura)
+par(op)
+
 ```
 
 ```{r}
-
 beginCluster()
 prediction <-
-  clusterR(brick(elev, decli, vertnum, horiznum, savi, uso), raster::predict, args = list(model = soc_rf, type = 'raw', inde = 1))
+  clusterR(brick(elev, decli, vertnum, horiznum, uso), raster::predict, args = list(model = soc_rf, type = 'raw', inde = 1))
 endCluster()
-plot(prediction)
+plot(prediction, main = "Mapa de carbono orgânico - modelo determinístico")
+
 ```
 
 ```{r}
 pontos$socprediction <- raster::extract(prediction, pontos)
 pontos@data
-str(pontos)
 
 ```
 
 ```{r}
 distmax <- dist(pontos@coords) %>% 
-  max()/3
+  max()/4
 
-```
-
-```{r}
 limites <- seq(0, distmax, length.out = 10)
-vario <- georob::sample.variogram(socbx ~ socprediction, data = pontos,
+vario <- georob::sample.variogram(soc ~ socprediction, data = pontos,
     locations = ~ x + y, lag.dist.def = limites, estimador = 'matheron') %>% 
-  plot(ylab = 'Semivariância', xlab = 'Distância de separação (m)', annotate.npairs = T)
+  plot(ylab = 'Semivariância', xlab = 'Distância de separação', annotate.npairs = T)
 ```
 
 ```{r}
 vario_fit <-
-  georob::fit.variogram.model(vario, variogram.model = 'RMspheric', param = c(variance = 0.05, nugget = 0.03, scale = 0.02),  weighting.method = "cressie", method = 'BFGS')
+  georob::fit.variogram.model(vario, variogram.model = 'RMexp', param = c(variance = 1.3, nugget = 0.5, scale = 1.7),  weighting.method = "cressie", method = 'BFGS')
 summary(vario_fit)
 ```
 
 ```{r}
-plot(vario, type = 'b')
-lines(vario_fit, col = 'red', lty = 'dashed')
+plot(vario, type = 'b', ylab = 'Semivariância', xlab = 'Distância de separação')
+lines(vario_fit, col = 'blue', lty = 'dashed')
 
 
 ```
 
-```{r}
+```{r, warning=FALSE}
 vario_fit_error <- georob::georob(
-   socbx ~ socprediction, pontos, locations = ~ x + y, variogram.model = 'RMexp', 
+   soc ~ socprediction, pontos, locations = ~ x + y, variogram.model = 'RMexp', 
  param = c(variance = vario_fit$variogram.object[[1]]$param[['variance']], 
-           nugget = vario_fit$variogram.object[[1]]$param[['nugget']]*0.66,
-           snugget = vario_fit$variogram.object[[1]]$param[['nugget']]*0.33,
+           nugget = 0.0025,
+           snugget = vario_fit$variogram.object[[1]]$param[['nugget']]-0.0025,
            scale = vario_fit$variogram.object[[1]]$param[['scale']]),
  fit.param = georob::default.fit.param(nugget = FALSE, snugget = FALSE),
  tuning.psi = 1000, control = georob::control.georob(initial.fixef = 'lm'))
@@ -219,21 +208,21 @@ summary(vario_fit_error)
 ```
 
 ```{r}
-plot(vario)
-lines(vario_fit_error)
+plot(vario, ylab = 'Semivariância', xlab = 'Distância de separação')
+lines(vario_fit_error, col = "red", lty = 'dashed')
+
 ```
 
 ```{r}
 
-grid <- sp::spsample(limite, 10000, type = 'regular')
+grid <- sp::spsample(cobertura, 10000, type = 'regular')
 plot(grid@coords, asp=1)
 colnames(grid@coords) <- colnames(pontos@coords)
 ```
 
 ```{r}
-grid$socpredictionfinal <- raster::extract(prediction, grid)
+grid$socprediction <- raster::extract(prediction, grid)
 
-#grid$B456 <- raster::extract(B456, grid)
 ```
 
 
@@ -247,13 +236,41 @@ colnames(grid@coords) <- colnames(pontos@coords)
 ```
 
 ```{r}
-pred_ponto <- predict(vario_fit_error, newdata = grid, na.action = na.omit, control = georob::control.predict.georob(extended.output = TRUE))
+pred_ponto <- predict(vario_fit_error, newdata = grid, na.action = na.omit, control = georob::control.predict.georob(extended.output = F))
 sp::gridded(pred_ponto) <- TRUE
 sp::spplot(pred_ponto)
+
+plot(pred_ponto, main = "Mapa de carbono orgânico gerado pelo modelo linear misto de variação espacial")
+
+```
+
+```{r, fig.asp=1}
+validacao <- georob::cv(vario_fit_error, nset = 260)
+summary(validacao)
+1 - sum((validacao$pred$data - validacao$pred$pred)^2) / sum((validacao$pred$data - mean(validacao$pred$data))^2)
+plot(validacao)
+```
+
+```{r}
+# Simulação espacial
+
+m_exp <- gstat::vgm(psill = 13.784, model = 'Exp', range = 2.11, nugget = 0.61)
+
+cond_sim <- gstat::krige(soc ~ socprediction, pontos, grid, model = m_exp, nmax = 15, nsim = 8)
 
 ```
 
 ```{r}
-pred_ponto <- predict(soc_rf, newdata = grid, control = georob::control.predict.georob(extended.output = TRUE)) sp::gridded(pred_ponto) <- TRUE str(pred_ponto)
+gridded(cond_sim) <- TRUE
+spplot(cond_sim)
+
+```
+```{r}
+cond_sim_prop <- 
+  calc(stack(cond_sim), function (x) x > 5) %>% 
+  calc(sum) %>% 
+  calc(function (x) x / 8)
+plot(cond_sim_prop, asp = 1)
+
 ```
 

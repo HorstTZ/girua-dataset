@@ -52,7 +52,7 @@ wgs84 <- sp::CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
 ```
 # ATIVIDADE 
 
-# Realizar a modelagem geoestatística do carboo orgânico do solo
+# Realizar a modelagem geoestatística do carbono orgânico do solo
 
 # Caracterização da área de estudo
 Os dados utilizados para realizar essa atividade foram obtigos em uma área de ~ 940 ha no município de Giruá. As amostras de solo foram coletadas em 261 pontos na camada de 0-5 cm de forma intencional. O suporte amostral foi em BLOCO (área de ~ 36 m^2), no entanto, para reliazar a atividade foi assumido que o suporte amostral foi de PONTO. 
@@ -156,6 +156,7 @@ pontos$uso <- raster::extract(uso, pontos) %>% as.factor()
 pontos@data
 
 ```
+#  Modelo de predição de carbono orgânico por Randon Forest 
 
 ```{r}
 # criar modelo de predição de SOC por Randon Forest 
@@ -196,12 +197,13 @@ pontos@data
 
 ```
 
+# Construir o Modelo Linear Misto de Variação Espacial
+
 ```{r}
 # Calcular a distância em entre pontos e gerar o varigrama amostral
 distmax <- dist(pontos@coords) %>% 
   max()/4
 
-# Construir o Modelo Linear Misto de Variação Espacial
 # O valor predito de SOC pelo  modelo "soc_rf" foi o efeito fixo do Modelo Linear Misto de Variação Espacial 
 
 limites <- seq(0, distmax, length.out = 10)
@@ -290,8 +292,11 @@ summary(validacao)
 plot(validacao)
 ```
 
+# Simulação sequencial gaussiana condicional
+
 ```{r}
-# Simulação sequencial gaussiana condicional (gstat)
+
+# Simulação 
 
 m_exp <- gstat::vgm(psill = 13.784, model = 'Exp', range = 2.11, nugget = 0.61)
 

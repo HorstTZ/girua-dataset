@@ -11,19 +11,17 @@ lang: pt
 editor_options: 
   chunk_output_type: inline
 ---
+
 ```{r, eval=FALSE}
 rmarkdown::render('main.Rmd', encoding = 'UTF-8', output_dir = "../docs")
 ```
 
 ```{r, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
 ```
 
 ```{r, echo=FALSE, include=FALSE}
-
 # Carregar pacotes 
-
 library(magrittr)
 library(dplyr)
 library(glue)
@@ -33,71 +31,64 @@ library(raster)
 library(caret)
 library(georob)
 library(gstat)
-library(fifer)
+# library(fifer)
 library(gstat)
-install.packages("")
-
 ```
 
 ```{r}
-
 # Sistemas de referência de coordenadas (Fonte: http://spatialreference.org/ref/epsg/)
-
 wgs84utm21s <- sp::CRS('+proj=utm +zone=21 +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
 wgs84 <- sp::CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
 
 # Definir rampa de cores
-  col_soil_var1 <- topo.colors(100)
- 
+col_soil_var1 <- topo.colors(100)
 ```
+
 # ATIVIDADE 
 
 # Realizar a modelagem geoestatística do carbono orgânico do solo
 
 # Caracterização da área de estudo
-Os dados utilizados para realizar essa atividade foram obtigos em uma área de ~ 940 ha no município de Giruá. As amostras de solo foram coletadas em 261 pontos na camada de 0-5 cm de forma intencional. O suporte amostral foi em BLOCO (área de ~ 36 m^2), no entanto, para reliazar a atividade foi assumido que o suporte amostral foi de PONTO. 
+
+Os dados utilizados para realizar essa atividade foram obtigos em uma área de ~ 940 ha no município de Giruá. As amostras de solo foram coletadas em 261 pontos na camada de 0-5 cm de forma intencional. O suporte amostral foi em BLOCO (área de ~ 36 m^2^), no entanto, para reliazar a atividade foi assumido que o suporte amostral foi de PONTO. 
 Nessa atividade foi realizada a predição da variável de solo "Carbono Orgânico do Solo" utilizando o Modelo Linar Misto de Variação Especia. No final da atividade foi realizada uma simulação sequencial gaussiana condicional.
 
 ```{r}
+# ASR: Não entendi a função desse peddaço de código.
 # Carregar arquivo vetorial referente ao uso da terra de Giruá
 data_folder <- '../data/'
 ext <- c('dbf', 'prj', 'shp', 'shx')
 files <- glue('uso-da-terra.{ext}')
 download <- !all(files %in% list.files(data_folder)) 
-
 ```
 
 ```{r}
 # Gerar mapa do uso da terra 
-
 cobertura <- 
   glue('{data_folder}uso-da-terra.shp') %>% 
   raster::shapefile(stringsAsFactors = TRUE) %>% 
-  sp::spTransform(wgs84)
+  # sp::spTransform(wgs84) # ASR: Não entendo o que é feito aqui. O SRC é WGS84 e é transformado para WGS84!?
+  sp::spTransform(wgs84utm21s) # ASR: os dados devem ser processados com SRC projetadas.
 str(cobertura, 2)
-
 ```
 
 ```{r}
 sp::spplot(
   cobertura, scales = list(draw = TRUE), col.regions = terrain.colors(nlevels(cobertura$uso)),
-main = "Mapa de uso da terra")
-
+  main = "Mapa de uso da terra")
 ```
 
 ```{r}
 # Carregar planilha contento variáveis dos 261 pontos de amostragem, camada 0 - 5 cm
-
-pontos <- read.csv('../data/pontos-261-1.csv', sep = ";", dec = ".", h=T)
+pontos <- read.csv('../data/pontos-261-1.csv', sep = ";", dec = ".", header = TRUE)
 sp::coordinates(pontos) <- c('x', 'y')
 sp::proj4string(pontos) <- wgs84utm21s
 str(pontos)
-pontos <- sp::spTransform(pontos, wgs84)
+# pontos <- sp::spTransform(pontos, wgs84) # ASR: Os dados precisam ser projetados para a análise geoestatística
 pontos@data
-
 ```
 
-```{r, fig.asp=1}
+```{r}
 # estatística descritiva dos pontos de carbono orgânico do solo (soc)
 op <- par(mfrow = c(1, 2))
 summary(pontos)
@@ -108,105 +99,99 @@ par (op)
 
 ```{r}
 # Gerar mapa de uso da terra com os 261 pontos de amostragem
-
 sp::spplot(
   cobertura, scales = list(draw = TRUE), 
   xlim = extendrange(c(pontos@bbox[1, ], cobertura@bbox[1, ])),
   ylim = extendrange(c(pontos@bbox[2, ], cobertura@bbox[2, ])),
   col.regions = terrain.colors(nlevels(cobertura$uso)),
-main = "Localização das 261 observações") +
+  main = "Localização das 261 observações") +
   lattice::xyplot(y ~ x, data = as.data.frame(pontos@coords), pch = 20, col = 'black') %>% 
   latticeExtra::as.layer()
-
 ```
 
 ```{r}
-## carregar covariáveis preditoras obtidas no TOPODATA (30 m) e mapa de uso da terra
-
+# carregar covariáveis preditoras obtidas no TOPODATA (30 m) e mapa de uso da terra
+# ASR: Há um erro mais abaixo no cluster que indica a inexitência do objeto 'elev'. Parece que ele está nomeado
+# como 'ELEV'.
 elev <- raster::raster('../data/ELEV.tif')
-sp::proj4string(elev)<-wgs84
-
+sp::proj4string(elev) <- wgs84
+names(elev) <- "elev"
 decli <- raster::raster('../data/decli.tif')
-sp::proj4string(decli)<-wgs84
-
+sp::proj4string(decli) <- wgs84
 vertnum <- raster::raster('../data/vertnum.tif')
-sp::proj4string(vertnum)<-wgs84
-
+sp::proj4string(vertnum) <- wgs84
 horiznum <- raster::raster('../data/horiznum.tif')
-sp::proj4string(vertnum)<-wgs84
-
+sp::proj4string(vertnum) <- wgs84
 uso <- raster::raster('../data/uso.tif')
-sp::proj4string(uso)<-wgs84
-
+sp::proj4string(uso) <- wgs84
 ```
 
 ```{r}
 # extrair valores da covariávies para os 261 pontos
-
 pontos$elev <- raster::extract(elev, pontos)
-
 pontos$decli <- raster::extract(decli, pontos)
-
 pontos$vertnum <- raster::extract(vertnum, pontos)
-
 pontos$horiznum <- raster::extract(horiznum, pontos)
-
 pontos$uso <- raster::extract(uso, pontos) %>% as.factor()
-
 pontos@data
-
 ```
+
 #  Modelo de predição de carbono orgânico por Randon Forest 
 
 ```{r}
-# criar modelo de predição de SOC por Randon Forest 
-
-soc_rf <- caret::train((soc ~ elev + decli + vertnum + horiznum + uso), data = pontos@data, method = "rf", tuneLength = 1, ntree = 500, importance = TRUE, na.action = na.omit, trControl = trainControl("LOOCV"))
-
+# criar modelo de predição de SOC por Randon Forest
+# ASR: Validação cruzada é muito demorada. Ademais, por que não usar o valor padrão de tuneLength (3)?
+soc_rf <- caret::train(
+  soc ~ elev + decli + vertnum + horiznum + uso, data = pontos@data, importance = TRUE)
+varImp(soc_rf)
+# ASR: por que não remover 'horiznum' do modelo?
 ```
 
-```{r}
+```{r, fig.asp=1}
 # gerar gráfico para viasualização dos resíduos da predição
-
 op <- par(mfrow = c(2, 2))
 pontos@data$socpred <- soc_rf$finalModel$predicted
-fig <- stats::lm(soc ~ socpred, data= pontos) 
+fig <- lm(soc ~ socpred, data= pontos) 
 plot(fig, which = 1:4)
-
 par(op)
-
 ```
 
 ```{r}
+# ASR: Qualidade do ajuste. A correlação é bastante baixa.
+summary(fig)
+```
 
+
+```{r}
 # Fazer a predição espacial para toda área a partir do modelo gerado - soc_rf
-
 beginCluster()
 prediction <-
   clusterR(brick(elev, decli, vertnum, horiznum, uso), raster::predict, args = list(model = soc_rf, type = 'raw', inde = 1))
 endCluster()
-plot(prediction, main = "Mapa de carbono orgânico - modelo determinístico")
-
 ```
 
 ```{r}
-# Criar o objeto "socprediction" na arquivo "pontos"
+# ASR: Sempre é bom separar o código do processamento do código para geração de figuras.
+plot(prediction, main = "Mapa de carbono orgânico - modelo determinístico")
+```
 
+
+```{r}
+# Criar o objeto "socprediction" na arquivo "pontos"
 pontos$socprediction <- raster::extract(prediction, pontos)
 pontos@data
-
 ```
 
 # Construir o Modelo Linear Misto de Variação Espacial
 
 ```{r}
 # Calcular a distância em entre pontos e gerar o varigrama amostral
-distmax <- dist(pontos@coords) %>% 
-  max()/4
+# ASR: A função dist serve para distâncias no plano, não distãncias de arco.
+distmax <- dist(pontos@coords) %>% max() / 4 # Por que 4???
 
 # O valor predito de SOC pelo  modelo "soc_rf" foi o efeito fixo do Modelo Linear Misto de Variação Espacial 
 
-limites <- seq(0, distmax, length.out = 10)
+limites <- seq(0, distmax, length.out = 10) # Por que só 10???
 vario <- georob::sample.variogram(soc ~ socprediction, data = pontos,
     locations = ~ x + y, lag.dist.def = limites, estimador = 'matheron') %>% 
   plot(ylab = 'Semivariância', xlab = 'Distância de separação', annotate.npairs = T)

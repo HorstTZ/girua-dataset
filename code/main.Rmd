@@ -50,7 +50,11 @@ wgs84 <- sp::CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
   col_soil_var1 <- topo.colors(100)
  
 ```
+# ATIVIDADE 
 
+# Realizar a modelagem geoestatística do carboo orgânico do solo
+
+# Caracterização da área de estudo
 Os dados utilizados para realizar essa atividade foram obtigos em uma área de ~ 940 ha no município de Giruá. As amostras de solo foram coletadas em 261 pontos na camada de 0-5 cm de forma intencional. O suporte amostral foi em BLOCO (área de ~ 36 m^2), no entanto, para reliazar a atividade foi assumido que o suporte amostral foi de PONTO. 
 Nessa atividade foi realizada a predição da variável de solo "Carbono Orgânico do Solo" utilizando o Modelo Linar Misto de Variação Especia. No final da atividade foi realizada uma simulação sequencial gaussiana condicional.
 
@@ -117,7 +121,7 @@ main = "Localização das 261 observações") +
 ```
 
 ```{r}
-## carregar covariáveis preditoras obtidas no TOPODATA (30 m)
+## carregar covariáveis preditoras obtidas no TOPODATA (30 m) e mapa de uso da terra
 
 elev <- raster::raster('../data/ELEV.tif')
 sp::proj4string(elev)<-wgs84
@@ -198,6 +202,7 @@ distmax <- dist(pontos@coords) %>%
   max()/4
 
 # Construir o Modelo Linear Misto de Variação Espacial
+# O valor predito de SOC pelo  modelo "soc_rf" foi o efeito fixo do Modelo Linear Misto de Variação Espacial 
 
 limites <- seq(0, distmax, length.out = 10)
 vario <- georob::sample.variogram(soc ~ socprediction, data = pontos,

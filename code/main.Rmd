@@ -31,14 +31,12 @@ library(raster)
 library(caret)
 library(georob)
 library(gstat)
-# library(fifer)
 library(gstat)
 ```
 
 ```{r}
 # Sistemas de referência de coordenadas (Fonte: http://spatialreference.org/ref/epsg/)
 wgs84utm21s <- sp::CRS('+proj=utm +zone=21 +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
-wgs84 <- sp::CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
 
 # Definir rampa de cores
 col_soil_var1 <- topo.colors(100)
@@ -54,22 +52,11 @@ Os dados utilizados para realizar essa atividade foram obtigos em uma área de ~
 Nessa atividade foi realizada a predição da variável de solo "Carbono Orgânico do Solo" utilizando o Modelo Linar Misto de Variação Especia. No final da atividade foi realizada uma simulação sequencial gaussiana condicional.
 
 ```{r}
-# ASR: Não entendi a função desse peddaço de código.
 # Carregar arquivo vetorial referente ao uso da terra de Giruá
-data_folder <- '../data/'
-ext <- c('dbf', 'prj', 'shp', 'shx')
-files <- glue('uso-da-terra.{ext}')
-download <- !all(files %in% list.files(data_folder)) 
-```
-
-```{r}
-# Gerar mapa do uso da terra 
 cobertura <- 
-  glue('{data_folder}uso-da-terra.shp') %>% 
-  raster::shapefile(stringsAsFactors = TRUE) %>% 
-  # sp::spTransform(wgs84) # ASR: Não entendo o que é feito aqui. O SRC é WGS84 e é transformado para WGS84!?
-  sp::spTransform(wgs84utm21s) # ASR: os dados devem ser processados com SRC projetadas.
-str(cobertura, 2)
+ raster::shapefile('../data/uso-da-terra.shp') %>%
+ sp::spTransform(wgs84utm21s)
+cobertura$uso <- as.factor(cobertura$uso)
 ```
 
 ```{r}
@@ -83,8 +70,6 @@ sp::spplot(
 pontos <- read.csv('../data/pontos-261-1.csv', sep = ";", dec = ".", header = TRUE)
 sp::coordinates(pontos) <- c('x', 'y')
 sp::proj4string(pontos) <- wgs84utm21s
-str(pontos)
-# pontos <- sp::spTransform(pontos, wgs84) # ASR: Os dados precisam ser projetados para a análise geoestatística
 pontos@data
 ```
 
@@ -105,7 +90,7 @@ sp::spplot(
   ylim = extendrange(c(pontos@bbox[2, ], cobertura@bbox[2, ])),
   col.regions = terrain.colors(nlevels(cobertura$uso)),
   main = "Localização das 261 observações") +
-  lattice::xyplot(y ~ x, data = as.data.frame(pontos@coords), pch = 20, col = 'black') %>% 
+  lattice::xyplot(y ~ x, data = as.data.frame(pontos@coords), pch = 20, col = 'black') %>%
   latticeExtra::as.layer()
 ```
 
@@ -113,17 +98,15 @@ sp::spplot(
 # carregar covariáveis preditoras obtidas no TOPODATA (30 m) e mapa de uso da terra
 # ASR: Há um erro mais abaixo no cluster que indica a inexitência do objeto 'elev'. Parece que ele está nomeado
 # como 'ELEV'.
-elev <- raster::raster('../data/ELEV.tif')
-sp::proj4string(elev) <- wgs84
-names(elev) <- "elev"
+# JB: aqui não aparece esse erro com o arquivo 'elev'.
+elev <- raster::raster('../data/ELEV.tif') 
+sp::proj4string(elev) <- wgs84utm21s
 decli <- raster::raster('../data/decli.tif')
-sp::proj4string(decli) <- wgs84
+sp::proj4string(decli) <- wgs84utm21s
 vertnum <- raster::raster('../data/vertnum.tif')
-sp::proj4string(vertnum) <- wgs84
-horiznum <- raster::raster('../data/horiznum.tif')
-sp::proj4string(vertnum) <- wgs84
+sp::proj4string(vertnum) <- wgs84utm21s
 uso <- raster::raster('../data/uso.tif')
-sp::proj4string(uso) <- wgs84
+sp::proj4string(uso) <- wgs84utm21s
 ```
 
 ```{r}
@@ -131,7 +114,6 @@ sp::proj4string(uso) <- wgs84
 pontos$elev <- raster::extract(elev, pontos)
 pontos$decli <- raster::extract(decli, pontos)
 pontos$vertnum <- raster::extract(vertnum, pontos)
-pontos$horiznum <- raster::extract(horiznum, pontos)
 pontos$uso <- raster::extract(uso, pontos) %>% as.factor()
 pontos@data
 ```
@@ -140,11 +122,9 @@ pontos@data
 
 ```{r}
 # criar modelo de predição de SOC por Randon Forest
-# ASR: Validação cruzada é muito demorada. Ademais, por que não usar o valor padrão de tuneLength (3)?
-soc_rf <- caret::train(
-  soc ~ elev + decli + vertnum + horiznum + uso, data = pontos@data, importance = TRUE)
+soc_rf <- caret::train((
+  soc ~ elev + decli + vertnum + uso), data = pontos@data, method = 'rf', importance = TRUE)
 varImp(soc_rf)
-# ASR: por que não remover 'horiznum' do modelo?
 ```
 
 ```{r, fig.asp=1}
@@ -166,12 +146,11 @@ summary(fig)
 # Fazer a predição espacial para toda área a partir do modelo gerado - soc_rf
 beginCluster()
 prediction <-
-  clusterR(brick(elev, decli, vertnum, horiznum, uso), raster::predict, args = list(model = soc_rf, type = 'raw', inde = 1))
+  clusterR(brick(elev, decli, vertnum, uso), raster::predict, args = list(model = soc_rf, type = 'raw', inde = 1))
 endCluster()
 ```
 
 ```{r}
-# ASR: Sempre é bom separar o código do processamento do código para geração de figuras.
 plot(prediction, main = "Mapa de carbono orgânico - modelo determinístico")
 ```
 
@@ -184,14 +163,18 @@ pontos@data
 
 # Construir o Modelo Linear Misto de Variação Espacial
 
+##Variograma amostral
+
+O variograma amostral foi computado através da função georob::sample.variogram. O estimador para semivariãncia foi Metheron (método dos momentos). Para a obtenção dos parâmetros utilizei um corte de 50% da distância máxima entre os pontos, armazenada no objeto distmax, excluindo os pares de longo alcance.
+
 ```{r}
 # Calcular a distância em entre pontos e gerar o varigrama amostral
-# ASR: A função dist serve para distâncias no plano, não distãncias de arco.
-distmax <- dist(pontos@coords) %>% max() / 4 # Por que 4???
+distmax <- dist(pontos@coords) %>% 
+ max() / 2 
 
 # O valor predito de SOC pelo  modelo "soc_rf" foi o efeito fixo do Modelo Linear Misto de Variação Espacial 
 
-limites <- seq(0, distmax, length.out = 10) # Por que só 10???
+limites <- seq(0, distmax, length.out = 15)
 vario <- georob::sample.variogram(soc ~ socprediction, data = pontos,
     locations = ~ x + y, lag.dist.def = limites, estimador = 'matheron') %>% 
   plot(ylab = 'Semivariância', xlab = 'Distância de separação', annotate.npairs = T)
@@ -203,15 +186,13 @@ vario <- georob::sample.variogram(soc ~ socprediction, data = pontos,
 # As estimativas dos parâmetros do modelo foi realizada pelo método "BFGS"
 
 vario_fit <-
-  georob::fit.variogram.model(vario, variogram.model = 'RMexp', param = c(variance = 1.3, nugget = 0.5, scale = 1.7),  weighting.method = "cressie", method = 'BFGS')
+  georob::fit.variogram.model(vario, variogram.model = 'RMspheric', param = c(variance = 0.7, nugget = 0.5, scale = 1000),  weighting.method = "cressie", method = 'BFGS')
 summary(vario_fit)
 ```
 
 ```{r}
-plot(vario, type = 'b', ylab = 'Semivariância', xlab = 'Distância de separação')
+plot(vario, type = 'b', ylab = 'Semivariância', xlab = 'Distância de separação (m)')
 lines(vario_fit, col = 'blue', lty = 'dashed')
-
-
 ```
 
 ```{r, warning=FALSE}
@@ -219,7 +200,7 @@ lines(vario_fit, col = 'blue', lty = 'dashed')
 # foi fixado o snugget em 0.0025, sendo esse valor referente ao erro de análise de laboratório
 
 vario_fit_error <- georob::georob(
-   soc ~ socprediction, pontos, locations = ~ x + y, variogram.model = 'RMexp', 
+   soc ~ socprediction, pontos, locations = ~ x + y, variogram.model = 'RMspheric', 
  param = c(variance = vario_fit$variogram.object[[1]]$param[['variance']], 
            nugget = 0.0025,
            snugget = vario_fit$variogram.object[[1]]$param[['nugget']]-0.0025,
@@ -230,9 +211,8 @@ summary(vario_fit_error)
 ```
 
 ```{r}
-plot(vario, ylab = 'Semivariância', xlab = 'Distância de separação')
+plot(vario, ylab = 'Semivariância', xlab = 'Distância de separação (m)')
 lines(vario_fit_error, col = "red", lty = 'dashed')
-
 ```
 
 ```{r}
@@ -244,9 +224,7 @@ colnames(grid@coords) <- colnames(pontos@coords)
 
 ```{r}
 # Inserir o valor predido "prediction" no grid
-
 grid$socprediction <- raster::extract(prediction, grid)
-
 ```
 
 
@@ -260,18 +238,18 @@ colnames(grid@coords) <- colnames(pontos@coords)
 ```
 
 ```{r}
-pred_ponto <- predict(vario_fit_error, newdata = grid, na.action = na.omit, control = georob::control.predict.georob(extended.output = F))
+pred_ponto <- raster::predict(vario_fit_error, newdata = grid, na.action = na.omit, control = georob::control.predict.georob(extended.output = F))
 sp::gridded(pred_ponto) <- TRUE
-sp::spplot(pred_ponto)
-
-plot(pred_ponto, main = "Mapa de carbono orgânico gerado pelo modelo linear misto de variação espacial")
-
 ```
 
-```{r, fig.asp=1}
-# validar o mapa utilizando os 261-1 pontos
+```{r}
+plot(pred_ponto, 
+     main = "Mapa de carbono orgânico gerado pelo modelo linear misto de variação espacial")
+```
 
-validacao <- georob::cv(vario_fit_error, nset = 260)
+
+```{r, fig.asp=1}
+validacao <- georob::cv(vario_fit_error)
 summary(validacao)
 1 - sum((validacao$pred$data - validacao$pred$pred)^2) / sum((validacao$pred$data - mean(validacao$pred$data))^2)
 plot(validacao)
@@ -280,26 +258,21 @@ plot(validacao)
 # Simulação sequencial gaussiana condicional
 
 ```{r}
-
 # Simulação 
-
-m_exp <- gstat::vgm(psill = 13.784, model = 'Exp', range = 2.11, nugget = 0.61)
-
+m_exp <- gstat::vgm(psill = 32.87, model = 'Exp', range = 436800, nugget = 0.57)
 cond_sim <- gstat::krige(soc ~ socprediction, pontos, grid, model = m_exp, nmax = 15, nsim = 8)
-
 ```
 
 ```{r}
 gridded(cond_sim) <- TRUE
 spplot(cond_sim)
-
 ```
+
 ```{r}
 cond_sim_prop <- 
   calc(stack(cond_sim), function (x) x > 5) %>% 
   calc(sum) %>% 
   calc(function (x) x / 8)
 plot(cond_sim_prop, asp = 1)
-
 ```
 

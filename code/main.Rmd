@@ -31,7 +31,6 @@ library(raster)
 library(caret)
 library(georob)
 library(gstat)
-library(gstat)
 ```
 
 ```{r}
@@ -79,8 +78,13 @@ op <- par(mfrow = c(1, 2))
 summary(pontos)
 hist(pontos$soc)
 boxplot(pontos$soc)
-par (op)
+par(op)
 ```
+
+```{r}
+bubble(pontos, "soc")
+```
+
 
 ```{r}
 # Gerar mapa de uso da terra com os 261 pontos de amostragem
@@ -99,14 +103,17 @@ sp::spplot(
 # ASR: Há um erro mais abaixo no cluster que indica a inexitência do objeto 'elev'. Parece que ele está nomeado
 # como 'ELEV'.
 # JB: aqui não aparece esse erro com o arquivo 'elev'.
-elev <- raster::raster('../data/ELEV.tif') 
-sp::proj4string(elev) <- wgs84utm21s
+# ASR: O erro aparece abaixo, no cluster.
+# ASR: Ao carregar os dados vejo que já estão no wgs84utm21s. Eles foram alterados? 
+elev <- raster::raster('../data/ELEV.tif')
+names(elev) <- "elev"
+# sp::proj4string(elev) <- wgs84utm21s
 decli <- raster::raster('../data/decli.tif')
-sp::proj4string(decli) <- wgs84utm21s
+# sp::proj4string(decli) <- wgs84utm21s
 vertnum <- raster::raster('../data/vertnum.tif')
-sp::proj4string(vertnum) <- wgs84utm21s
+# sp::proj4string(vertnum) <- wgs84utm21s
 uso <- raster::raster('../data/uso.tif')
-sp::proj4string(uso) <- wgs84utm21s
+# sp::proj4string(uso) <- wgs84utm21s
 ```
 
 ```{r}
@@ -122,8 +129,8 @@ pontos@data
 
 ```{r}
 # criar modelo de predição de SOC por Randon Forest
-soc_rf <- caret::train((
-  soc ~ elev + decli + vertnum + uso), data = pontos@data, method = 'rf', importance = TRUE)
+soc_rf <- caret::train(
+  soc ~ elev + decli + vertnum + uso, data = pontos@data, method = 'rf', importance = TRUE)
 varImp(soc_rf)
 ```
 
@@ -141,7 +148,6 @@ par(op)
 summary(fig)
 ```
 
-
 ```{r}
 # Fazer a predição espacial para toda área a partir do modelo gerado - soc_rf
 beginCluster()
@@ -151,36 +157,49 @@ endCluster()
 ```
 
 ```{r}
-plot(prediction, main = "Mapa de carbono orgânico - modelo determinístico")
+plot(prediction, main = "Mapa de carbono orgânico - componente determinístico")
 ```
 
 
 ```{r}
 # Criar o objeto "socprediction" na arquivo "pontos"
-pontos$socprediction <- raster::extract(prediction, pontos)
-pontos@data
+# ASR: Os dados a serem usados são do modelo calibrado acima, já armazenados na coluna 'socpred', e 
+#     considerados como os valores ajustados pelo modelo.
+# pontos$socprediction <- raster::extract(prediction, pontos)
 ```
 
 # Construir o Modelo Linear Misto de Variação Espacial
 
-##Variograma amostral
+## Variograma amostral
+
+```{r}
+# resíduos da floresta aleatória
+pontos$res_rf <- pontos$socpred - pontos$soc
+bubble(pontos, "res_rf", main = "Resíduos da floresta aleatória")
+```
+
 
 O variograma amostral foi computado através da função georob::sample.variogram. O estimador para semivariãncia foi Metheron (método dos momentos). Para a obtenção dos parâmetros utilizei um corte de 50% da distância máxima entre os pontos, armazenada no objeto distmax, excluindo os pares de longo alcance.
 
 ```{r}
 # Calcular a distância em entre pontos e gerar o varigrama amostral
 distmax <- dist(pontos@coords) %>% 
- max() / 2 
+ max() / 3 # ASR: Sugiro usar 3, o mesmo valor usado pelo gstat. 2 é o limite e tu tens muitos pontos próximo.
 
 # O valor predito de SOC pelo  modelo "soc_rf" foi o efeito fixo do Modelo Linear Misto de Variação Espacial 
 
-limites <- seq(0, distmax, length.out = 15)
-vario <- georob::sample.variogram(soc ~ socprediction, data = pontos,
+# ASR: dá para abusar aqui, pois 30 pares por lag já é mais do que suficiente. Ademais, mostra que não sobra 
+#     estrutura espacial. Bom mostrar acima as distâncias entre os pontos vizinhos. 
+limites <- seq(0, distmax, length.out = 20) 
+# ASR: não se usa o socprediction, mas sim o socpred
+vario <- georob::sample.variogram(soc ~ socpred, data = pontos,
     locations = ~ x + y, lag.dist.def = limites, estimador = 'matheron') %>% 
   plot(ylab = 'Semivariância', xlab = 'Distância de separação', annotate.npairs = T)
 ```
 
 ```{r}
+# ASR: O modelo ajustado é o esférico. Pela forma do variograma, não faz sentido ajustar esse modelo com os 
+#     parâmetros informados. Se já tem conhecimento do efeito pepita, informe-o aqui.
 # Ajuste do variograma amostral a um modelo exponencial 
 # Foi utilizdo O método dos quadrados mínimos não-lineares ponderados, sendo a ponderação definida conforme o método de "Cressie"
 # As estimativas dos parâmetros do modelo foi realizada pelo método "BFGS"
@@ -196,14 +215,18 @@ lines(vario_fit, col = 'blue', lty = 'dashed')
 ```
 
 ```{r, warning=FALSE}
+# ASR: Veja que o modleo é o esférico. Sugiro usar o exponencial ou Mattern.
 # Ajuste do variograma com a sepração da variância estrutural (snugget) e não estrutural (nugget)
 # foi fixado o snugget em 0.0025, sendo esse valor referente ao erro de análise de laboratório
 
+nugget <- 0.0025 # Tem que explicar de onde isso vem, mostrar o cálculo.
+
+# ASR: socpred
 vario_fit_error <- georob::georob(
-   soc ~ socprediction, pontos, locations = ~ x + y, variogram.model = 'RMspheric', 
+   soc ~ socpred, pontos, locations = ~ x + y, variogram.model = 'RMspheric', 
  param = c(variance = vario_fit$variogram.object[[1]]$param[['variance']], 
-           nugget = 0.0025,
-           snugget = vario_fit$variogram.object[[1]]$param[['nugget']]-0.0025,
+           nugget = nugget,
+           snugget = vario_fit$variogram.object[[1]]$param[['nugget']] - nugget,
            scale = vario_fit$variogram.object[[1]]$param[['scale']]),
  fit.param = georob::default.fit.param(nugget = FALSE, snugget = FALSE),
  tuning.psi = 1000, control = georob::control.georob(initial.fixef = 'lm'))
@@ -218,13 +241,14 @@ lines(vario_fit_error, col = "red", lty = 'dashed')
 ```{r}
 # criar grid para realizar a predição pelo Modelo Linear Misto de Variação Espacial
 grid <- sp::spsample(cobertura, 10000, type = 'regular')
-plot(grid@coords, asp=1)
+# plot(grid@coords, asp=1)
 colnames(grid@coords) <- colnames(pontos@coords)
 ```
 
 ```{r}
+# ASR: socpred ao invés de socprediction
 # Inserir o valor predido "prediction" no grid
-grid$socprediction <- raster::extract(prediction, grid)
+grid$socpred <- raster::extract(prediction, grid)
 ```
 
 

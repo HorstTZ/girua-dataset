@@ -3,10 +3,6 @@ title: "Modelagem geoestatística do carbono orgânico do solo"
 author: "Moura-Bueno"
 date: "12 de dezembro de 2017"
 output: html_document
-  #bookdown::word_document2:
-      #reference_docx: ../docs/template.docx
-      #bibliography: biblio.bib
-csl: abnt.csl
 lang: pt
 editor_options: 
   chunk_output_type: inline
@@ -42,13 +38,13 @@ wgs84utm21s <- sp::CRS('+proj=utm +zone=21 +south +ellps=WGS84 +datum=WGS84 +uni
 col_soil_var1 <- topo.colors(100)
 ```
 
-# ATIVIDADE 
-
 # Realizar a modelagem geoestatística do carbono orgânico do solo
 
 # Caracterização da área de estudo
 
+<!-- ASR: Seria interessante explicar a razão da decisão sobre o suporte. Também seria interessante explicar como foram definidos os locais de amostragem. -->
 Os dados utilizados para realizar essa atividade foram obtigos em uma área de ~ 940 ha no município de Giruá. As amostras de solo foram coletadas em 261 pontos na camada de 0-5 cm de forma intencional. O suporte amostral foi em BLOCO (área de ~ 36 m^2^), no entanto, para reliazar a atividade foi assumido que o suporte amostral foi de PONTO. 
+
 Nessa atividade foi realizada a predição da variável de solo "Carbono Orgânico do Solo" utilizando o Modelo Linar Misto de Variação Espacial. No final da atividade foi realizada uma simulação sequencial gaussiana condicional.
 
 ```{r}
@@ -58,6 +54,7 @@ cobertura <-
  sp::spTransform(wgs84utm21s)
 cobertura$uso <- as.factor(cobertura$uso)
 ```
+
 A figura abaixo mostra a distribuição espacial do uso da terra na área. O uso lavoura é o predominante na área, seguido dos usos campo, floresta e capoeira.
 
 ```{r}
@@ -87,28 +84,43 @@ sp::spplot(
 ```
 
 ```{r}
+# ASR: Outra forma de visualização interessante.
+mapview(pontos, "soc")
+```
+
+```{r}
+# ASR: Separar saída textual de saída gráfica
+summary(pontos)
+```
+
+
+```{r}
 # estatística descritiva dos pontos de carbono orgânico do solo (soc)
 op <- par(mfrow = c(1, 2))
-summary(pontos)
 hist(pontos$soc)
 boxplot(pontos$soc)
 par(op)
 ```
 
+<!-- ASR: A distribuição não é normal, mas também não é longe de normal. Será que precisa de transformação? Na verdade não encontrei o local onde isso foi feito. -->
 O histograma acima mostra que os dados de carbono orgânico do solo (soc) não possuem uma distribuição normal e o boxplot mostra a presença de alguns valores acima de 5% de soc considerados outliers. Os dados foram submetidos a transformação BoxCox antes de serem construidos os modelos.
 
 A figura abaixo mostra a distribuição do teor de carbono na área.
 
 ```{r}
-bubble(pontos, "soc")
+# ASR: uma forma interessante de visualização é calcular os resíduos em relação à média.
+pontos$residuos <- pontos$soc - mean(pontos$soc)
+bubble(pontos, "residuos")
 ```
 A fisgura abaixo mostra a distribuição do teor de carbono na área em relação ao uso da terra, onde símbolos de tamanho maior indicam valores mais altos de carbono.
 
+<!-- ASR: Seria interessante fazer uma análise descritiva da figura abaixo. -->
 ```{r}
+# ASR: Usando novamente os resíduos (em relação à média) fica mais fácil destacar os valores altos e baixos.
 sp::spplot(
   cobertura, scales = list(draw = TRUE), col.regions = terrain.colors(nlevels(cobertura$uso)),
   main = "Mapa de uso da terra") +
-  bubble(pontos, "soc", pch = 16, maxsize = 2, col = c("red"))
+  bubble(pontos, "residuos", pch = 16, maxsize = 1.5, col = c("red", "blue"))
 ```
 
 ```{r}
@@ -140,6 +152,7 @@ summary(lm_fit)
 ```
 O modelo ajustado para predição do SOC consegue explicar apenas 16% da variação dos carbono na área, sendo 15% explicado pela covariável "uso"
 
+<!-- ASR: Na figura abaixo, há dois grupos de observações. Seria interessante explicar. -->
 ```{r, fig.asp=1}
 # gerar gráfico para viasualização dos resíduos da predição
 op <- par(mfrow = c(2, 2))
@@ -147,7 +160,7 @@ plot(lm_fit, which = 1:4)
 par(op)
 ```
 
-
+<!-- ASR: No meu caso, vertnum não teve coefficientes estimados. Ademais, não compreendo porque o modelo linear foi ajustado separadamente quando tudo pode ser feito diretamente no georob. Também faz pouco sentido realizar as predições espaciais separadamente, menos ainda usando clusters para um modelo tão simples. -->
 ```{r}
 # Fazer a predição espacial para toda área a partir do modelo gerado por RLM
 beginCluster()
@@ -161,12 +174,13 @@ plot(prediction, main = "Mapa de carbono orgânico - componente determinístico"
 ```
 O mapa de carbono para área de estudo mostra uma grande semelhança com o mapa de uso da terra. 
 
+<!-- ASR: Não entendo a necessidade do código abaixo. -->
 ```{r}
 # Criar o objeto "socpred" na arquivo "pontos"
 pontos$socpred <- raster::extract(prediction, pontos)
 ```
 
-
+<!-- ASR: Não entendo a necessidade do código abaixo. -->
 ```{r}
 # resíduos da regressão linear multipla (RLM)
 pontos$res_lm <- pontos$socpred - pontos$soc
@@ -178,6 +192,8 @@ A figura acima mostra a distribuição esapcial dos resíduos do modelo gerado p
 ## Construir o Modelo Linear Misto de Variação Espacial
 
 Para utilizar esse modelo assumimos que os dados são uma realização de um campo aleatório, com distribuição normal que podem ser descritos como a combinação aditiva de efeitos fixos, efeitos estocásticos e erro aleatório independente.
+
+<!-- ASR: O objetivo do relatório é conter, além dos resultados das análises, um relato de sua experiência, sua forma de ver e entender o conteúdo e o que foi feito. Os parágrafos abaixos são, fundamentalmente, uma cópia modificada do texto do material de apoio. Não há muito sentido em incluir isso no seu relatório. Ademais, essa prática pode ser interpretada como plágio. Tome muito cuidado com isso no futuro. -->
 
 O modelo linear misto de variação espacial denotado por
 
@@ -206,6 +222,11 @@ distmin <- dist(pontos@coords) %>%
 distmean <- dist(pontos@coords) %>% 
   mean()
 
+# ASR: Acredito que em comentário anterior disse que 30 pares de pontos por classe de distância (lags) é um 
+#     valor considerado suficiente. Parece-me que isso resultou na alteração abaixo, com length.out = 30. Note 
+#     que isso define o número de classes de distância, que resultou em apenas 10 pares de pontos na primeira
+#     classe de distãncia. Veja figura abaixo.
+
 #gerar o varigrama amostral
 # O valor predito de carbono pelo  modelo "lm_fit" foi o efeito fixo do Modelo Linear Misto de Variação Espacial 
 limites <- seq(0, distmax, length.out = 30) 
@@ -215,6 +236,7 @@ vario <- georob::sample.variogram(soc ~ socpred, data = pontos,
 ```
 O variograma acima mostra que os valores preditos pelo modelo RLM apresentam baixa dependencia espacial, sendo a distribuição dos conjuntos de pontos dentendo ao efeito pepita puro.
 
+<!-- ASR: O parâmetro variance é a diferença entre a variância total e o nugget. Trata-se da variância estruturada espacialmente. -->
 ```{r}
 # Ajuste do variograma amostral a um modelo exponencial 
 # Foi utilizdo O método dos quadrados mínimos não-lineares ponderados, sendo a ponderação definida conforme o método de "Cressie"
@@ -225,15 +247,16 @@ summary(vario_fit)
 ```
 O variograma abaixo mostra que a curva ajustada (linha em azul) não passa pelo centro de massa dos pontos.
 
+<!-- ASR: Parece-me que passa, sim, pelo centro de massa dos pontos. Contudo, houve um erro no cômputo dos valores: Hessian not positive definite. Talvez o nugget deveria ter sido fixado. Ou os parâmetros iniciais modificados. -->
 ```{r, fig.asp=1}
 plot(vario, type = 'b', ylab = 'Semivariância', xlab = 'Distância de separação (m)')
 lines(vario_fit, col = 'blue', lty = 'dashed')
 ```
 # Ajuste do variograma com a sepração da variância estrutural - snugget e não estrutural (erros de medida) - nugget.
 
+<!-- ASR: Não entedo a razão pela qual as covariáveis não foram usadas aqui. REML serve exatamente para estimar os coeficientes do modelo linear levando em consideração a dependência espacial. -->
 ```{r, warning=FALSE}
 # foi fixado o nugget em 0.001, sendo esse valor referente ao erro de análise de laboratório. Esse valor foi obtido calculado a variâcia entre as replicatas de laboratório.
-
 nugget <- 0.001 
 vario_fit_error <- georob::georob(
    soc ~ socpred, pontos, locations = ~ x + y, variogram.model = 'RMexp', 
@@ -254,6 +277,7 @@ lines(vario_fit_error, col = "red", lty = 'dashed')
 lines(vario_fit, col = "blue", lty = 'dashed')
 ```
 
+<!-- ASR: A sequencia de valores avaliados precisa incluir o valor estimado. O valor estimado para scale é inferior a 1. -->
 ```{r}
 # perfil da função logarítmica da verossimilhança restrita para o parâmetro alcance (scale)
 prof_reml_fit_scale <- georob::profilelogLik(object = vario_fit_error, values = data.frame(scale = seq(1, 60, by = 1)))
@@ -276,6 +300,7 @@ grid <- sp::spsample(cobertura, 10000, type = 'regular')
 colnames(grid@coords) <- colnames(pontos@coords)
 ```
 
+<!-- ASR: Continuo não entendendo porque as covariáveis não foram usadas. -->
 ```{r}
 # Inserir o valor predido "prediction" no grid
 grid$socpred <- raster::extract(prediction, grid)
@@ -301,21 +326,36 @@ sp::gridded(pred_ponto) <- TRUE
 plot(pred_ponto, 
      main = "Mapa de carbono orgânico gerado pelo modelo linear misto de variação espacial")
 ```
-O mapa gerado pelo Modelo Linear Mistro de Variação Espacial apresenta muita relação com o mapa obtido pelo modelo RLM (efeito fixo). Isso mostra que componente de efeito aleatório relacionado a variação dos dados de carbono no espaço geográfico não contribui para melhorar as predições.Esse resultado já era esperado devido a forma do variagrama ajustados ao dados, em que foi observado baixa depedência espacial.
+
+<!-- ASR: Seria interessante explicar a razão de não haver dependência espacial. -->
+O mapa gerado pelo Modelo Linear Mistro de Variação Espacial apresenta muita relação com o mapa obtido pelo modelo RLM (efeito fixo). Isso mostra que componente de efeito aleatório relacionado a variação dos dados de carbono no espaço geográfico não contribui para melhorar as predições. Esse resultado já era esperado devido a forma do variagrama ajustados ao dados, em que foi observado baixa depedência espacial.
 
 # Validação do modelo
 
 Para a validação dos resultados foi utilizado o método de validação cruzada. Para isso utilizei a função cv::georob e o número de pontos foi os mesmo 261-1 utilizados para construção do modelo.
 
+<!-- ASR: Separar saídas de texto das saídas gráficas. -->
 ```{r, fig.asp=1}
 validacao <- georob::cv(vario_fit_error, nset = 260)
 summary(validacao)
-1 - sum((validacao$pred$data - validacao$pred$pred)^2) / sum((validacao$pred$data - mean(validacao$pred$data))^2)
-plot(validacao)
 ```
 Os resultados da validação mostram um valor de RMSE = 0.84% de carbono, sendo esse valor considerado alto para a área de estudo.
 
+<!-- ASR: Seria interessante discutir os resultados. -->
+
+```{r}
+1 - sum((validacao$pred$data - validacao$pred$pred)^2) / sum((validacao$pred$data - mean(validacao$pred$data))^2)
+```
+
+<!-- ASR: Novamente três grupos de dados. Interessante explicar. -->
+```{r}
+plot(validacao)
+```
+
+
 # Simulação sequencial gaussiana condicional
+
+<!-- ASR: Interessante explicar. -->
 
 ```{r}
 # Simulação 

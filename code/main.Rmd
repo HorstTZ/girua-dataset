@@ -31,6 +31,7 @@ library(raster)
 library(caret)
 library(georob)
 library(gstat)
+library(mapview)
 ```
 
 ```{r}
@@ -48,7 +49,7 @@ col_soil_var1 <- topo.colors(100)
 # Caracterização da área de estudo
 
 Os dados utilizados para realizar essa atividade foram obtigos em uma área de ~ 940 ha no município de Giruá. As amostras de solo foram coletadas em 261 pontos na camada de 0-5 cm de forma intencional. O suporte amostral foi em BLOCO (área de ~ 36 m^2^), no entanto, para reliazar a atividade foi assumido que o suporte amostral foi de PONTO. 
-Nessa atividade foi realizada a predição da variável de solo "Carbono Orgânico do Solo" utilizando o Modelo Linar Misto de Variação Especia. No final da atividade foi realizada uma simulação sequencial gaussiana condicional.
+Nessa atividade foi realizada a predição da variável de solo "Carbono Orgânico do Solo" utilizando o Modelo Linar Misto de Variação Espacial. No final da atividade foi realizada uma simulação sequencial gaussiana condicional.
 
 ```{r}
 # Carregar arquivo vetorial referente ao uso da terra de Giruá
@@ -57,6 +58,7 @@ cobertura <-
  sp::spTransform(wgs84utm21s)
 cobertura$uso <- as.factor(cobertura$uso)
 ```
+A figura abaixo mostra a distribuição espacial do uso da terra na área. O uso lavoura é o predominante na área, seguido dos usos campo, floresta e capoeira.
 
 ```{r}
 sp::spplot(
@@ -65,7 +67,7 @@ sp::spplot(
 ```
 
 ```{r}
-# Carregar planilha contento variáveis dos 261 pontos de amostragem, camada 0 - 5 cm
+# Carregar planilha contento variáveis dos 261 pontos de amostragem
 pontos <- read.csv('../data/pontos-261-1.csv', sep = ";", dec = ".", header = TRUE)
 sp::coordinates(pontos) <- c('x', 'y')
 sp::proj4string(pontos) <- wgs84utm21s
@@ -73,21 +75,7 @@ pontos@data
 ```
 
 ```{r}
-# estatística descritiva dos pontos de carbono orgânico do solo (soc)
-op <- par(mfrow = c(1, 2))
-summary(pontos)
-hist(pontos$soc)
-boxplot(pontos$soc)
-par(op)
-```
-
-```{r}
-bubble(pontos, "soc")
-```
-
-
-```{r}
-# Gerar mapa de uso da terra com os 261 pontos de amostragem
+# Gerar mapa de uso da terra com a espacialização dos 261 pontos de amostragem
 sp::spplot(
   cobertura, scales = list(draw = TRUE), 
   xlim = extendrange(c(pontos@bbox[1, ], cobertura@bbox[1, ])),
@@ -99,21 +87,38 @@ sp::spplot(
 ```
 
 ```{r}
+# estatística descritiva dos pontos de carbono orgânico do solo (soc)
+op <- par(mfrow = c(1, 2))
+summary(pontos)
+hist(pontos$soc)
+boxplot(pontos$soc)
+par(op)
+```
+
+O histograma acima mostra que os dados de carbono orgânico do solo (soc) não possuem uma distribuição normal e o boxplot mostra a presença de alguns valores acima de 5% de soc considerados outliers. Os dados foram submetidos a transformação BoxCox antes de serem construidos os modelos.
+
+A figura abaixo mostra a distribuição do teor de carbono na área.
+
+```{r}
+bubble(pontos, "soc")
+```
+A fisgura abaixo mostra a distribuição do teor de carbono na área em relação ao uso da terra, onde símbolos de tamanho maior indicam valores mais altos de carbono.
+
+```{r}
+sp::spplot(
+  cobertura, scales = list(draw = TRUE), col.regions = terrain.colors(nlevels(cobertura$uso)),
+  main = "Mapa de uso da terra") +
+  bubble(pontos, "soc", pch = 16, maxsize = 2, col = c("red"))
+```
+
+```{r}
 # carregar covariáveis preditoras obtidas no TOPODATA (30 m) e mapa de uso da terra
-# ASR: Há um erro mais abaixo no cluster que indica a inexitência do objeto 'elev'. Parece que ele está nomeado
-# como 'ELEV'.
-# JB: aqui não aparece esse erro com o arquivo 'elev'.
-# ASR: O erro aparece abaixo, no cluster.
-# ASR: Ao carregar os dados vejo que já estão no wgs84utm21s. Eles foram alterados? 
+# JB: Sim, eles foram transformados 
 elev <- raster::raster('../data/ELEV.tif')
 names(elev) <- "elev"
-# sp::proj4string(elev) <- wgs84utm21s
 decli <- raster::raster('../data/decli.tif')
-# sp::proj4string(decli) <- wgs84utm21s
 vertnum <- raster::raster('../data/vertnum.tif')
-# sp::proj4string(vertnum) <- wgs84utm21s
 uso <- raster::raster('../data/uso.tif')
-# sp::proj4string(uso) <- wgs84utm21s
 ```
 
 ```{r}
@@ -122,108 +127,116 @@ pontos$elev <- raster::extract(elev, pontos)
 pontos$decli <- raster::extract(decli, pontos)
 pontos$vertnum <- raster::extract(vertnum, pontos)
 pontos$uso <- raster::extract(uso, pontos) %>% as.factor()
-pontos@data
 ```
 
-#  Modelo de predição de carbono orgânico por Randon Forest 
+## Modelo de predição de carbono orgânico por Regressão Linear Múltipla (RLM)
+
+# Efeito fixo do Modelo Linear Misto de Variação Espacial
 
 ```{r}
-# criar modelo de predição de SOC por Randon Forest
-soc_rf <- caret::train(
-  soc ~ elev + decli + vertnum + uso, data = pontos@data, method = 'rf', importance = TRUE)
-varImp(soc_rf)
+# criar modelo de predição de SOC RLM
+lm_fit <- lm(soc ~ elev + decli + vertnum + uso, data = pontos)
+summary(lm_fit)
 ```
+O modelo ajustado para predição do SOC consegue explicar apenas 16% da variação dos carbono na área, sendo 15% explicado pela covariável "uso"
 
 ```{r, fig.asp=1}
 # gerar gráfico para viasualização dos resíduos da predição
 op <- par(mfrow = c(2, 2))
-pontos@data$socpred <- soc_rf$finalModel$predicted
-fig <- lm(soc ~ socpred, data= pontos) 
-plot(fig, which = 1:4)
+plot(lm_fit, which = 1:4)
 par(op)
 ```
 
-```{r}
-# ASR: Qualidade do ajuste. A correlação é bastante baixa.
-summary(fig)
-```
 
 ```{r}
-# Fazer a predição espacial para toda área a partir do modelo gerado - soc_rf
+# Fazer a predição espacial para toda área a partir do modelo gerado por RLM
 beginCluster()
 prediction <-
-  clusterR(brick(elev, decli, vertnum, uso), raster::predict, args = list(model = soc_rf, type = 'raw', inde = 1))
+  clusterR(brick(elev, decli, vertnum, uso), raster::predict, args = list(model = lm_fit))
 endCluster()
 ```
 
 ```{r}
 plot(prediction, main = "Mapa de carbono orgânico - componente determinístico")
 ```
+O mapa de carbono para área de estudo mostra uma grande semelhança com o mapa de uso da terra. 
+
+```{r}
+# Criar o objeto "socpred" na arquivo "pontos"
+pontos$socpred <- raster::extract(prediction, pontos)
+```
 
 
 ```{r}
-# Criar o objeto "socprediction" na arquivo "pontos"
-# ASR: Os dados a serem usados são do modelo calibrado acima, já armazenados na coluna 'socpred', e 
-#     considerados como os valores ajustados pelo modelo.
-# pontos$socprediction <- raster::extract(prediction, pontos)
+# resíduos da regressão linear multipla (RLM)
+pontos$res_lm <- pontos$socpred - pontos$soc
+bubble(pontos, "res_lm", main = "Resíduos da RLM")
 ```
 
-# Construir o Modelo Linear Misto de Variação Espacial
+A figura acima mostra a distribuição esapcial dos resíduos do modelo gerado por RLM. O resultado mostra que não restou estrutura espacial, a variação é muita pequena. Gerei um variograma com os resíduos e observei que eles não apresentam dependência espacial.
+
+## Construir o Modelo Linear Misto de Variação Espacial
+
+Para utilizar esse modelo assumimos que os dados são uma realização de um campo aleatório, com distribuição normal que podem ser descritos como a combinação aditiva de efeitos fixos, efeitos estocásticos e erro aleatório independente.
+
+O modelo linear misto de variação espacial denotado por
+
+$$Y(\boldsymbol{s}_i) = Z(\boldsymbol{s}_i) + \varepsilon(\boldsymbol{s}_i) = \boldsymbol{x}(\boldsymbol{s}_i)^\text{T}\boldsymbol{\beta} + B(\boldsymbol{s}_i) + \varepsilon(\boldsymbol{s}_i)$$
+
+$Z(\boldsymbol{s}_i)$ ou sinal possui dois componentes. O primeiro (efeito fixo) $\boldsymbol{x}(\boldsymbol{s}_i)^\text{T}\boldsymbol{\beta}$ representa os efeitos de origem desterminística, que relaciona a dependência entre a variável e as covariáveis, sendo esse gerado anteriormente utilizando a RLM e as covariáveis "elev, decli, vertnum, uso".
+
+O segundo componente do sinal (efeito aleatório), $B(\boldsymbol{s}_i)$, um campo aleatório Gaussiano estacionário não-observável, descrito por sua função de média e função de covariância.
+
+$\varepsilon(\boldsymbol{s}_i)$ é o erro (ou ruído), descrito por uma distribuição Gaussina de probabilidade, cujo parâmetro desconhecido de escala é $\tau$.
 
 ## Variograma amostral
 
-```{r}
-# resíduos da floresta aleatória
-pontos$res_rf <- pontos$socpred - pontos$soc
-bubble(pontos, "res_rf", main = "Resíduos da floresta aleatória")
-```
+O variograma amostral foi computado através da função georob::sample.variogram. O estimador para semivariãncia foi Metheron (método dos momentos). Para a obtenção dos parâmetros utilizei um corte de 50% da distância máxima entre os pontos, armazenada no objeto distmax, excluindo os pares de longo alcance. O efeito fixo utilizado foi o componente determinítico "socpred".
 
-
-O variograma amostral foi computado através da função georob::sample.variogram. O estimador para semivariãncia foi Metheron (método dos momentos). Para a obtenção dos parâmetros utilizei um corte de 50% da distância máxima entre os pontos, armazenada no objeto distmax, excluindo os pares de longo alcance.
 
 ```{r}
-# Calcular a distância em entre pontos e gerar o varigrama amostral
+# Calcular a distância em entre pontos
+# distância máxima entre os pontos 
 distmax <- dist(pontos@coords) %>% 
- max() / 3 # ASR: Sugiro usar 3, o mesmo valor usado pelo gstat. 2 é o limite e tu tens muitos pontos próximo.
+ max() / 3 
+# distância mínima entre os pontos 
+distmin <- dist(pontos@coords) %>% 
+  min()
+# distância média entre os pontos 
+distmean <- dist(pontos@coords) %>% 
+  mean()
 
-# O valor predito de SOC pelo  modelo "soc_rf" foi o efeito fixo do Modelo Linear Misto de Variação Espacial 
-
-# ASR: dá para abusar aqui, pois 30 pares por lag já é mais do que suficiente. Ademais, mostra que não sobra 
-#     estrutura espacial. Bom mostrar acima as distâncias entre os pontos vizinhos. 
-limites <- seq(0, distmax, length.out = 20) 
-# ASR: não se usa o socprediction, mas sim o socpred
+#gerar o varigrama amostral
+# O valor predito de carbono pelo  modelo "lm_fit" foi o efeito fixo do Modelo Linear Misto de Variação Espacial 
+limites <- seq(0, distmax, length.out = 30) 
 vario <- georob::sample.variogram(soc ~ socpred, data = pontos,
     locations = ~ x + y, lag.dist.def = limites, estimador = 'matheron') %>% 
   plot(ylab = 'Semivariância', xlab = 'Distância de separação', annotate.npairs = T)
 ```
+O variograma acima mostra que os valores preditos pelo modelo RLM apresentam baixa dependencia espacial, sendo a distribuição dos conjuntos de pontos dentendo ao efeito pepita puro.
 
 ```{r}
-# ASR: O modelo ajustado é o esférico. Pela forma do variograma, não faz sentido ajustar esse modelo com os 
-#     parâmetros informados. Se já tem conhecimento do efeito pepita, informe-o aqui.
 # Ajuste do variograma amostral a um modelo exponencial 
 # Foi utilizdo O método dos quadrados mínimos não-lineares ponderados, sendo a ponderação definida conforme o método de "Cressie"
 # As estimativas dos parâmetros do modelo foi realizada pelo método "BFGS"
-
 vario_fit <-
-  georob::fit.variogram.model(vario, variogram.model = 'RMspheric', param = c(variance = 0.7, nugget = 0.5, scale = 1000),  weighting.method = "cressie", method = 'BFGS')
+  georob::fit.variogram.model(vario, variogram.model = 'RMexp', param = c(variance = 0.686, nugget = 0.074, scale = 0.107),  weighting.method = "cressie", method = 'BFGS')
 summary(vario_fit)
 ```
+O variograma abaixo mostra que a curva ajustada (linha em azul) não passa pelo centro de massa dos pontos.
 
-```{r}
+```{r, fig.asp=1}
 plot(vario, type = 'b', ylab = 'Semivariância', xlab = 'Distância de separação (m)')
 lines(vario_fit, col = 'blue', lty = 'dashed')
 ```
+# Ajuste do variograma com a sepração da variância estrutural - snugget e não estrutural (erros de medida) - nugget.
 
 ```{r, warning=FALSE}
-# ASR: Veja que o modleo é o esférico. Sugiro usar o exponencial ou Mattern.
-# Ajuste do variograma com a sepração da variância estrutural (snugget) e não estrutural (nugget)
-# foi fixado o snugget em 0.0025, sendo esse valor referente ao erro de análise de laboratório
+# foi fixado o nugget em 0.001, sendo esse valor referente ao erro de análise de laboratório. Esse valor foi obtido calculado a variâcia entre as replicatas de laboratório.
 
-nugget <- 0.0025 # Tem que explicar de onde isso vem, mostrar o cálculo.
-
-# ASR: socpred
+nugget <- 0.001 
 vario_fit_error <- georob::georob(
-   soc ~ socpred, pontos, locations = ~ x + y, variogram.model = 'RMspheric', 
+   soc ~ socpred, pontos, locations = ~ x + y, variogram.model = 'RMexp', 
  param = c(variance = vario_fit$variogram.object[[1]]$param[['variance']], 
            nugget = nugget,
            snugget = vario_fit$variogram.object[[1]]$param[['nugget']] - nugget,
@@ -233,10 +246,28 @@ vario_fit_error <- georob::georob(
 summary(vario_fit_error)
 ```
 
-```{r}
-plot(vario, ylab = 'Semivariância', xlab = 'Distância de separação (m)')
+A figura abaixo mostra a comparação entre as funções vario_fit_error e vario_fit, em que se observa a que a função vario_fit_error apresenta comportamento de efeito pepita puro.
+
+```{r, fig.asp=1}
+plot(vario, type = "b", ylab = 'Semivariância', xlab = 'Distância de separação (m)')
 lines(vario_fit_error, col = "red", lty = 'dashed')
+lines(vario_fit, col = "blue", lty = 'dashed')
 ```
+
+```{r}
+# perfil da função logarítmica da verossimilhança restrita para o parâmetro alcance (scale)
+prof_reml_fit_scale <- georob::profilelogLik(object = vario_fit_error, values = data.frame(scale = seq(1, 60, by = 1)))
+```
+
+Na figura abaixo é apresantado o peril da função logarítmica da verossimilhança restrita para o parâmetro alcance, em que a interseção entre a linha horizontal e o perfil indica a região de 95% de confiança para o parâmetro alcance.
+
+```{r}
+plot(loglik ~ scale, prof_reml_fit_scale, type = "l")
+abline(v = summary(vario_fit_error)$param.aniso[[1]]['scale', ], lty = c("dashed", rep('dotted', 2)), col = 'red')
+abline(h = vario_fit_error$loglik - 0.5 * qchisq(0.95, 1), lty = "dotted")
+```
+
+A função vario_fit_error foi utilizada para a predição espacial a partir de um grid de predição abrangendo a área.
 
 ```{r}
 # criar grid para realizar a predição pelo Modelo Linear Misto de Variação Espacial
@@ -246,11 +277,9 @@ colnames(grid@coords) <- colnames(pontos@coords)
 ```
 
 ```{r}
-# ASR: socpred ao invés de socprediction
 # Inserir o valor predido "prediction" no grid
 grid$socpred <- raster::extract(prediction, grid)
 ```
-
 
 ```{r}
 grid <- 
@@ -261,8 +290,10 @@ grid <-
 colnames(grid@coords) <- colnames(pontos@coords)
 ```
 
+# Predição espacial da resposta do modelo linear misto de variação espacial
+
 ```{r}
-pred_ponto <- raster::predict(vario_fit_error, newdata = grid, na.action = na.omit, control = georob::control.predict.georob(extended.output = F))
+pred_ponto <- raster::predict(vario_fit_error, type = "response", signif = 0.95, newdata = grid, na.action = na.omit, control = georob::control.predict.georob(extended.output = F))
 sp::gridded(pred_ponto) <- TRUE
 ```
 
@@ -270,21 +301,26 @@ sp::gridded(pred_ponto) <- TRUE
 plot(pred_ponto, 
      main = "Mapa de carbono orgânico gerado pelo modelo linear misto de variação espacial")
 ```
+O mapa gerado pelo Modelo Linear Mistro de Variação Espacial apresenta muita relação com o mapa obtido pelo modelo RLM (efeito fixo). Isso mostra que componente de efeito aleatório relacionado a variação dos dados de carbono no espaço geográfico não contribui para melhorar as predições.Esse resultado já era esperado devido a forma do variagrama ajustados ao dados, em que foi observado baixa depedência espacial.
 
+# Validação do modelo
+
+Para a validação dos resultados foi utilizado o método de validação cruzada. Para isso utilizei a função cv::georob e o número de pontos foi os mesmo 261-1 utilizados para construção do modelo.
 
 ```{r, fig.asp=1}
-validacao <- georob::cv(vario_fit_error)
+validacao <- georob::cv(vario_fit_error, nset = 260)
 summary(validacao)
 1 - sum((validacao$pred$data - validacao$pred$pred)^2) / sum((validacao$pred$data - mean(validacao$pred$data))^2)
 plot(validacao)
 ```
+Os resultados da validação mostram um valor de RMSE = 0.84% de carbono, sendo esse valor considerado alto para a área de estudo.
 
 # Simulação sequencial gaussiana condicional
 
 ```{r}
 # Simulação 
-m_exp <- gstat::vgm(psill = 32.87, model = 'Exp', range = 436800, nugget = 0.57)
-cond_sim <- gstat::krige(soc ~ socprediction, pontos, grid, model = m_exp, nmax = 15, nsim = 8)
+m_exp <- gstat::vgm(psill = 0.62, model = 'Exp', range = 0.1068, nugget = 0.62)
+cond_sim <- gstat::krige(soc ~ socpred, pontos, grid, model = m_exp, nmax = 15, nsim = 8)
 ```
 
 ```{r}

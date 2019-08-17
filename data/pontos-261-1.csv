@@ -1,0 +1,262 @@
+id;x;y;camada;soc;cobertura;solo;clay;silt;sand
+1;756591.426;6896720.21;1;2.01;lavoura;latossolo vermelho;48;34;18
+2;755958.581;6896464.092;1;2.78;lavoura;latossolo vermelho;56;34;10
+3;755547.582;6895320.433;1;2.88;lavoura;latossolo vermelho;53;29;18
+4;756110.803;6896390.737;1;2.07;lavoura;latossolo vermelho;53;31;16
+5;756016.729;6896251.929;1;2.71;lavoura;latossolo vermelho;51;37;12
+6;755572.97;6896044.174;1;2.97;lavoura;latossolo vermelho;51;36;13
+7;755878.82;6896174.315;1;2.51;lavoura;latossolo vermelho;50;35;15
+8;755268.929;6896274.022;1;1.92;lavoura;latossolo vermelho;55;30;15
+9;755555.822;6895749.391;1;2.65;lavoura;latossolo vermelho;50;43;7
+10;755850.142;6896413.41;1;2.37;lavoura;latossolo vermelho;50;38;12
+11;755636.231;6896227.989;1;2.2;lavoura;latossolo vermelho;48;39;13
+12;755346.377;6895757.781;1;2.24;lavoura;latossolo vermelho;53;38;9
+13;755321.346;6895867.642;1;2.31;lavoura;latossolo vermelho;52;35;13
+14;756427.434;6896570.428;1;3.55;lavoura;latossolo vermelho;60;33;7
+15;755192.811;6896105.161;1;1.94;lavoura;latossolo vermelho;50;47;3
+16;756013.901;6896081.02;1;2.34;lavoura;latossolo vermelho;50;32;18
+17;755579.298;6895505.894;1;2.58;lavoura;latossolo vermelho;51;42;7
+18;755717.054;6896014.782;1;2.22;lavoura;latossolo vermelho;51;30;19
+19;755641.617;6895394.603;1;2.17;lavoura;latossolo vermelho;55;33;12
+20;756635.194;6896924.417;1;2.41;lavoura;latossolo vermelho;55;34;11
+21;756451.626;6896787.877;1;1.97;lavoura;latossolo vermelho;63;30;7
+22;755842.264;6895788.729;1;2.11;lavoura;latossolo vermelho;52;30;18
+23;755997.193;6896734.335;1;2.12;lavoura;latossolo vermelho;50;39;11
+24;756187.595;6896492.889;1;2.91;lavoura;latossolo vermelho;56;31;13
+25;755751.067;6896403.109;1;3.13;lavoura;latossolo vermelho;53;31;16
+26;755403.774;6896145.905;1;2.72;lavoura;latossolo vermelho;48;35;17
+27;755579.724;6895683.131;1;3.22;lavoura;latossolo vermelho;63;32;5
+28;756233.263;6896675.093;1;3.44;lavoura;latossolo vermelho;51;34;15
+29;755485.62;6896157.432;1;3.27;lavoura;latossolo vermelho;52;33;15
+30;756293.63;6896852.507;1;3;lavoura;latossolo vermelho;60;35;5
+31;755358.248;6896306.187;1;3.42;lavoura;latossolo vermelho;54;33;13
+32;756242.42;6896403.323;1;2.13;lavoura;latossolo vermelho;50;34;16
+33;756021.645;6896895.256;1;2.62;lavoura;latossolo vermelho;56;34;10
+34;756192.414;6896332.548;1;2.66;lavoura;latossolo vermelho;52;33;15
+35;756139.635;6896359.359;1;4.98;campo nativo;gleissolo haplico;66;25;9
+36;755802.988;6895960.655;1;2.99;lavoura;latossolo vermelho;66;23;11
+37;755543.594;6896342.756;1;2.6;lavoura;latossolo vermelho;50;41;9
+38;755267.402;6896170.549;1;3.9;lavoura;latossolo vermelho;50;41;9
+39;755721.755;6895525.021;1;2.6;lavoura;latossolo vermelho;64;28;8
+40;756630.06;6896824.565;1;2.59;lavoura;latossolo vermelho;63;28;9
+41;755971.259;6896795.098;1;2.82;lavoura;latossolo vermelho;61;25;14
+42;755750.321;6896246.612;1;3.02;lavoura;latossolo vermelho;54;32;14
+43;755379.686;6895450.654;1;3.27;lavoura;latossolo vermelho;49;42;9
+44;756037.874;6896425.308;1;2.92;lavoura;latossolo vermelho;59;27;14
+45;755833.46;6895708.318;1;2.76;lavoura;latossolo vermelho;56;35;9
+46;756479.329;6896369.75;1;1.75;lavoura;latossolo vermelho;59;31;10
+47;756082.314;6896321.89;1;4.67;campo nativo;gleissolo haplico;41;53;6
+48;755422.559;6895737.729;1;1.85;lavoura;latossolo vermelho;52;39;9
+49;756208.331;6896175.493;1;2.78;lavoura;latossolo vermelho;61;26;13
+50;755578.366;6895205.501;1;3.16;lavoura;latossolo vermelho;54;35;11
+51;755394.277;6895148.965;1;3.18;lavoura;latossolo vermelho;52;36;12
+52;755197.107;6895137.115;1;2.25;lavoura;latossolo vermelho;56;32;12
+53;755270.492;6894884.043;1;2.46;lavoura;latossolo vermelho;50;39;11
+54;755225.543;6894844.636;1;3.03;lavoura;latossolo vermelho;52;37;11
+55;755265.249;6894778.457;1;2.35;lavoura;latossolo vermelho;51;35;14
+56;755035.854;6894746.785;1;2.34;lavoura;latossolo vermelho;51;37;12
+57;754875.036;6894822.497;1;2.8;lavoura;latossolo vermelho;56;31;13
+58;754823.094;6894852.594;1;2.92;lavoura;latossolo vermelho;62;30;8
+59;755083.19;6894985.582;1;2.88;lavoura;latossolo vermelho;54;38;8
+60;755163.25;6895354.426;1;2.27;lavoura;latossolo vermelho;49;33;18
+61;755112.747;6895035.688;1;2.91;lavoura;latossolo vermelho;62;32;6
+62;755184.049;6894917.82;1;2.13;lavoura;latossolo vermelho;59;28;13
+63;754810.602;6895029.003;1;2.45;lavoura;latossolo vermelho;56;30;14
+64;754787.689;6895106.422;1;2.78;lavoura;latossolo vermelho;63;27;10
+65;754623.113;6895234.561;1;2.25;lavoura;latossolo vermelho;57;30;13
+66;755030.579;6895388.413;1;2.25;lavoura;latossolo vermelho;59;33;8
+67;754995.67;6895255.881;1;3.27;lavoura;latossolo vermelho;55;36;9
+68;754572.799;6895405.927;1;3.18;campo nativo;latossolo vermelho;55;36;9
+69;754499.751;6895281.167;1;2.69;campo nativo;latossolo vermelho;50;36;14
+70;754422;6895176.733;1;2.72;campo nativo;latossolo vermelho;56;33;11
+71;754541.807;6894958.882;1;3.53;campo nativo;gleissolo haplico;43;44;13
+72;755367.384;6894756.882;1;5.43;campo nativo;gleissolo haplico;30;53;17
+73;755420.203;6894800.145;1;5.52;campo nativo;gleissolo haplico;42;38;20
+74;755535.487;6894919.375;1;2.07;campo nativo;gleissolo haplico;38;48;14
+75;755110.611;6894606.085;1;5.47;campo nativo;gleissolo haplico;45;32;23
+76;754288.034;6895039.706;1;5.53;campo nativo;gleissolo haplico;54;30;16
+77;754272.417;6895133.356;1;3.35;campo nativo;gleissolo haplico;40;46;14
+78;754204.527;6895010.846;1;2.72;campo nativo;gleissolo haplico;61;33;6
+79;754057.816;6894995.554;1;2.23;campo nativo;gleissolo haplico;43;40;17
+80;754063.997;6895328.919;1;4.22;campo nativo;gleissolo haplico;51;34;15
+81;753987.812;6895049.902;1;3.21;campo nativo;gleissolo haplico;43;37;20
+82;753812.785;6894995.942;1;5.63;campo nativo;gleissolo haplico;42;40;18
+83;754087.904;6895213.119;1;5.58;campo nativo;gleissolo haplico;42;39;19
+84;754108.223;6895270.608;1;4.05;campo nativo;gleissolo haplico;39;46;15
+85;754170.915;6895273.943;1;3.45;campo nativo;gleissolo haplico;49;37;14
+86;754219.987;6895232.321;1;5.56;campo nativo;gleissolo haplico;33;51;16
+87;754513.063;6894917.979;1;5.16;campo nativo;gleissolo haplico;38;49;13
+88;754455.19;6894876.997;1;5.43;campo nativo;gleissolo haplico;53;31;16
+89;754336.95;6894996.399;1;5.3;campo nativo;gleissolo haplico;36;47;17
+90;754285.947;6895238.099;1;5.51;campo nativo;gleissolo haplico;37;57;6
+91;755053.55;6895650.965;1;2.15;campo nativo;gleissolo haplico;43;40;17
+92;754751.892;6894798.913;1;4.28;floresta nativa;gleissolo haplico;35;51;14
+93;755011.255;6894651.946;1;5.22;floresta nativa;gleissolo haplico;42;46;12
+94;755601.497;6895124.959;1;3.5;floresta nativa;gleissolo haplico;48;39;13
+95;755874.823;6895461.692;1;5.04;floresta nativa;latossolo vermelho;53;28;19
+96;756047.016;6895653.128;1;3.87;floresta nativa;latossolo vermelho;54;26;20
+97;756162.921;6895858.929;1;2.27;floresta nativa;latossolo vermelho;56;32;12
+98;756185.034;6896050.733;1;3.21;floresta nativa;latossolo vermelho;52;41;7
+99;756353.998;6896170.181;1;4.13;floresta nativa;latossolo vermelho;59;25;16
+100;755042.096;6895776.645;1;3.13;campo nativo;latossolo vermelho;58;33;9
+101;755100.678;6895646.362;1;3.47;campo nativo;latossolo vermelho;63;27;10
+102;755185.058;6895836.39;1;4.05;campo nativo;latossolo vermelho;61;32;7
+103;755099.891;6895973.98;1;1.98;campo nativo;latossolo vermelho;48;37;15
+104;754938.571;6895948.774;1;3.18;floresta nativa;latossolo vermelho;57;32;11
+105;754907.718;6895778.95;1;2.25;floresta nativa;latossolo vermelho;61;26;13
+106;754898.724;6895617.251;1;2.07;floresta nativa;latossolo vermelho;58;41;1
+107;754759.952;6895613.081;1;5.55;floresta nativa;gleissolo haplico;35;48;17
+108;754589.289;6895496.816;1;3.57;floresta nativa;gleissolo haplico;42;46;12
+109;754465.233;6895294.116;1;3.43;floresta nativa;latossolo vermelho;52;33;15
+110;755227.209;6896177.954;1;5.02;floresta nativa;gleissolo haplico;44;44;12
+111;755651.603;6896362.335;1;5.36;floresta nativa;gleissolo haplico;53;32;15
+112;755816.343;6896573.757;1;2.34;floresta nativa;gleissolo haplico;53;37;10
+113;756100.296;6896546.719;1;3.51;floresta nativa;gleissolo haplico;39;45;16
+114;755697.499;6897195.591;1;3.51;campo nativo;latossolo vermelho;61;29;10
+115;755707.559;6896866.705;1;2.89;campo nativo;latossolo vermelho;53;28;19
+116;755827.582;6896877.729;1;2.35;campo nativo;latossolo vermelho;66;22;12
+117;755869.166;6897066.62;1;2.45;campo nativo;latossolo vermelho;58;32;10
+118;755394.818;6897243.884;1;3.29;lavoura;gleissolo haplico;41;43;16
+119;755561.398;6897203.944;1;1.74;lavoura;latossolo vermelho;56;32;12
+120;755489.806;6897080.969;1;2.49;lavoura;latossolo vermelho;50;34;16
+121;755392.695;6897150.532;1;3.04;lavoura;latossolo vermelho;50;38;12
+122;755228.173;6897363.418;1;2.07;lavoura;latossolo vermelho;59;27;14
+123;755072.143;6897406.931;1;2.43;lavoura;latossolo vermelho;51;33;16
+124;755003.518;6897447.058;1;3.08;campo nativo;latossolo vermelho;55;36;9
+125;755200.655;6897276.928;1;3.13;lavoura;latossolo vermelho;64;28;8
+126;755219.846;6897118.945;1;1.99;lavoura;latossolo vermelho;49;38;13
+127;755606.758;6897003.764;1;3.77;lavoura;gleissolo haplico;59;33;8
+128;755473.06;6896856.52;1;3.01;lavoura;latossolo vermelho;49;45;6
+129;755480.572;6896711.627;1;3.2;lavoura;latossolo vermelho;61;32;7
+130;755482.643;6896571.32;1;2.31;lavoura;latossolo vermelho;48;35;17
+131;755575.059;6896605.131;1;3.02;floresta nativa;latossolo vermelho;66;27;7
+132;755440.024;6896492.167;1;4;floresta nativa;latossolo vermelho;54;33;13
+133;755341.142;6896646.598;1;1.8;lavoura;latossolo vermelho;49;37;14
+134;755213.204;6896589.207;1;3.57;floresta nativa;gleissolo haplico;66;24;10
+135;755403.978;6896767.508;1;2.79;lavoura;latossolo vermelho;72;20;8
+136;755314.081;6896878.538;1;2.01;lavoura;latossolo vermelho;57;32;11
+137;755233.729;6896855.511;1;5.64;floresta nativa;latossolo vermelho;57;25;18
+138;755416.845;6896925.819;1;2.14;lavoura;latossolo vermelho;54;34;12
+139;755097.524;6897054.055;1;2.09;lavoura;latossolo vermelho;50;38;12
+140;754916.335;6897321.179;1;2.12;floresta nativa;latossolo vermelho;50;34;16
+141;754992.079;6896811.525;1;2.1;campo nativo;latossolo vermelho;49;40;11
+142;754999.819;6896708.139;1;2.1;floresta nativa;latossolo vermelho;69;24;7
+143;754935.55;6896730.059;1;3.48;lavoura;latossolo vermelho;57;29;14
+144;754991.402;6896537.625;1;3.44;lavoura;latossolo vermelho;53;38;9
+145;755141.972;6896450.816;1;4.03;lavoura;latossolo vermelho;55;37;8
+146;755080.333;6896521.381;1;2.42;floresta nativa;latossolo vermelho;60;29;11
+147;754848.31;6896366.928;1;3.29;lavoura;latossolo vermelho;61;30;9
+148;754700.635;6896393.324;1;3.12;lavoura;gleissolo haplico;35;53;12
+149;754634.258;6896211.994;1;3.78;lavoura;latossolo vermelho;56;35;9
+150;754529.124;6896329.994;1;2.84;lavoura;latossolo vermelho;50;37;13
+151;754469.412;6896161.593;1;3.63;lavoura;latossolo vermelho;62;28;10
+152;754478.352;6896459.239;1;3.11;lavoura;latossolo vermelho;55;32;13
+153;754605.048;6896494.964;1;3.6;lavoura;latossolo vermelho;60;30;10
+154;754769.885;6896549.754;1;2.68;lavoura;latossolo vermelho;52;35;13
+155;754799.974;6897125.457;1;3.44;lavoura;latossolo vermelho;62;30;8
+156;754857.941;6896915.995;1;3.1;lavoura;latossolo vermelho;63;27;10
+157;754704.636;6897001.891;1;3.51;lavoura;latossolo vermelho;71;20;9
+158;754605.921;6897053.261;1;2.87;lavoura;latossolo vermelho;50;31;19
+159;754554.992;6897000.89;1;2.76;floresta nativa;latossolo vermelho;65;22;13
+160;754729.557;6896749.45;1;3.38;lavoura;latossolo vermelho;60;30;10
+161;754737.883;6896636.354;1;3.87;lavoura;latossolo vermelho;59;28;13
+162;754543.711;6896698.453;1;3.15;lavoura;latossolo vermelho;54;33;13
+163;754509.921;6896803.758;1;3.33;floresta nativa;latossolo vermelho;56;32;12
+164;754331.452;6896631.777;1;3.53;floresta nativa;latossolo vermelho;64;28;8
+165;754291.02;6896545.272;1;4.01;lavoura;latossolo vermelho;53;32;15
+166;754340.976;6896481.295;1;3.15;lavoura;latossolo vermelho;55;32;13
+167;754322.139;6896340.734;1;2.15;lavoura;gleissolo haplico;49;36;15
+168;754343.037;6896058.858;1;3.05;lavoura;gleissolo haplico;34;50;16
+169;754207.922;6896127.96;1;2.15;lavoura;latossolo vermelho;49;36;15
+170;754094.573;6896067.253;1;2.25;lavoura;latossolo vermelho;62;32;6
+171;754140.373;6896015.864;1;2.64;floresta nativa;latossolo vermelho;59;32;9
+172;754317.131;6895706.524;1;2.6;lavoura;latossolo vermelho;68;22;10
+173;754166.127;6895731.17;1;3.11;lavoura;gleissolo haplico;62;29;9
+174;754057.287;6895632.046;1;4.12;lavoura;latossolo vermelho;55;35;10
+175;753942.112;6895516.501;1;2.73;campo nativo;latossolo vermelho;59;29;12
+176;753878.03;6895523.117;1;2.61;campo nativo;latossolo vermelho;55;34;11
+177;754173.985;6895451.375;1;2.03;lavoura;latossolo vermelho;58;34;8
+178;754334.716;6895440.238;1;4.01;lavoura;latossolo vermelho;57;34;9
+179;754440.456;6895342.391;1;4.92;campo nativo;gleissolo haplico;50;37;13
+180;754458.094;6895588.119;1;2.7;lavoura;latossolo vermelho;49;40;11
+181;754522.166;6895509.858;1;2.53;floresta nativa;latossolo vermelho;48;45;7
+182;754618.262;6895604.758;1;3.3;floresta nativa;gleissolo haplico;38;42;20
+183;754613.613;6895806.956;1;2.75;lavoura;latossolo vermelho;53;30;17
+184;754695.433;6895950.532;1;3.21;lavoura;gleissolo haplico;58;25;17
+185;754805.494;6895900.13;1;3.65;floresta nativa;gleissolo haplico;35;46;19
+186;755046.627;6896208.536;1;2.42;floresta nativa;latossolo vermelho;61;27;12
+187;755084.505;6896408.354;1;2.21;floresta nativa;latossolo vermelho;51;42;7
+188;755087.983;6896335.567;1;2.87;lavoura;latossolo vermelho;49;38;13
+189;754916.047;6896265.601;1;3.68;lavoura;latossolo vermelho;49;36;15
+190;754655.667;6896095.992;1;3.04;lavoura;latossolo vermelho;49;36;15
+191;753895.121;6895733.493;1;2.28;campo nativo;latossolo vermelho;61;28;11
+192;753992.589;6895815.288;1;3.19;floresta nativa;latossolo vermelho;50;38;12
+193;753972.466;6895878.954;1;2.77;campo nativo;latossolo vermelho;59;34;7
+194;754006.908;6896015.993;1;5.35;floresta nativa;gleissolo haplico;36;44;20
+195;753999.769;6896060.996;1;2.83;floresta nativa;gleissolo haplico;56;32;12
+196;753813.421;6895939.006;1;3.69;campo nativo;gleissolo haplico;32;53;15
+197;753737.174;6896021;1;3.78;campo nativo;latossolo vermelho;59;33;8
+198;753849.622;6896053.602;1;4.11;campo nativo;latossolo vermelho;50;32;18
+199;753827.485;6896199.826;1;3.24;campo nativo;latossolo vermelho;69;17;14
+200;753935.058;6896219.277;1;2.8;floresta nativa;latossolo vermelho;58;32;10
+201;753740.04;6896305.307;1;4.28;campo nativo;latossolo vermelho;54;26;20
+202;753745.068;6896502.506;1;3.32;campo nativo;latossolo vermelho;54;36;10
+203;753873.594;6896550.703;1;5.04;campo nativo;latossolo vermelho;56;34;10
+204;753958.207;6896636.878;1;4.3;campo nativo;gleissolo haplico;28;55;17
+205;753770.62;6896717.595;1;3.19;floresta nativa;latossolo vermelho;50;38;12
+206;753910.412;6896744.541;1;2.66;campo nativo;latossolo vermelho;53;30;17
+207;754002.389;6896684.052;1;3.19;campo nativo;latossolo vermelho;52;40;8
+208;754066.784;6896428.365;1;2.7;campo nativo;latossolo vermelho;52;30;18
+209;754161.644;6896519.481;1;3.04;campo nativo;latossolo vermelho;57;33;10
+210;754160.939;6896637.74;1;3.12;campo nativo;latossolo vermelho;48;32;20
+211;754238.734;6896801.518;1;3.23;campo nativo;latossolo vermelho;53;33;14
+212;754425.696;6896823.774;1;4;floresta nativa;latossolo vermelho;73;22;5
+213;754415.28;6896876.448;1;3.27;floresta nativa;latossolo vermelho;58;40;2
+214;754486.439;6896956.831;1;3.61;floresta nativa;latossolo vermelho;55;34;11
+215;754014.495;6896936.372;1;2.33;campo nativo;gleissolo haplico;42;44;14
+216;753959.221;6896935.826;1;3.98;campo nativo;latossolo vermelho;54;33;13
+217;753987.413;6897035.068;1;5.33;floresta nativa;gleissolo haplico;31;52;17
+218;754123.695;6896847.273;1;3.25;campo nativo;latossolo vermelho;52;31;17
+219;754210.901;6896977.801;1;2.69;campo nativo;gleissolo haplico;42;41;17
+220;754337.748;6897087.102;1;2.71;campo nativo;latossolo vermelho;51;36;13
+221;754160.277;6897115.881;1;3.17;campo nativo;latossolo vermelho;63;26;11
+222;754179.323;6897240.592;1;2.49;floresta nativa;latossolo vermelho;48;38;14
+223;754427.996;6895877.475;1;2.53;lavoura;latossolo vermelho;49;40;11
+224;752317.734;6894935.606;1;3.42;lavoura;latossolo vermelho;48;42;10
+225;752162.3145;6895183.847;1;2.82;lavoura;latossolo vermelho;63;30;7
+226;752379.781;6895424.596;1;3.01;lavoura;latossolo vermelho;56;34;10
+227;752775.5512;6895381.375;1;2.01;floresta nativa;latossolo vermelho;59;37;4
+228;752617.967;6895956.391;1;2.47;lavoura;latossolo vermelho;55;35;10
+229;753445.097;6895234.811;1;2.27;lavoura;latossolo vermelho;58;33;9
+230;753577.091;6895173.949;1;2.27;campo nativo;gleissolo haplico;60;31;9
+231;753346.461;6895446.31;1;3.78;lavoura;latossolo vermelho;62;29;9
+232;753137.445;6895723.262;1;2.41;lavoura;latossolo vermelho;51;39;10
+233;753595.093;6895893.505;1;2.87;lavoura;gleissolo haplico;59;31;10
+234;753498.381;6896031.412;1;2.58;floresta nativa;latossolo vermelho;52;42;6
+235;753566.5542;6896289.614;1;4.06;lavoura;gleissolo haplico;54;38;8
+236;753298.553;6896127.004;1;2.34;lavoura;latossolo vermelho;54;37;9
+237;753024.79;6895550.883;1;2.12;lavoura;latossolo vermelho;57;29;14
+238;752996.014;6896270.147;1;3.02;lavoura;latossolo vermelho;67;27;6
+239;753072.121;6896781.717;1;2.65;lavoura;latossolo vermelho;57;34;9
+240;753191;6897051;1;2.9;lavoura;latossolo vermelho;51;39;10
+241;753740.3635;6897184.319;1;2.84;lavoura;latossolo vermelho;62;30;8
+242;754571.592;6897416.286;1;2.67;lavoura;gleissolo haplico;51;37;12
+243;754761.924;6897389.478;1;2.71;lavoura;latossolo vermelho;55;32;13
+244;754353;6897362;1;2.49;lavoura;latossolo vermelho;53;31;16
+245;753847;6895229;1;2.85;campo nativo;gleissolo haplico;47;39;14
+246;753549;6896440;1;3.19;campo nativo;gleissolo haplico;66;28;6
+247;753697;6895715;1;4.52;lavoura;gleissolo haplico;42;44;14
+248;752759;6895608;1;2.43;lavoura;latossolo vermelho;59;33;8
+249;753418;6896667;1;5.08;floresta nativa;latossolo vermelho;51;34;15
+250;753325;6896432;1;2.58;lavoura;latossolo vermelho;59;31;10
+251;753385;6895616;1;2.11;lavoura;latossolo vermelho;57;35;8
+252;753133;6895289;1;2.26;lavoura;latossolo vermelho;50;34;16
+253;752725;6895189;1;1.85;lavoura;latossolo vermelho;55;36;9
+254;752508;6895258;1;2.62;lavoura;latossolo vermelho;58;35;7
+255;752949;6896542;1;3.27;lavoura;latossolo vermelho;58;32;10
+256;753832;6897037;1;3.18;floresta nativa;latossolo vermelho;62;31;7
+257;753402;6896783;1;1.98;lavoura;latossolo vermelho;51;39;10
+258;752750;6896238;1;2.47;lavoura;latossolo vermelho;59;34;7
+259;753048;6895998;1;2.14;lavoura;latossolo vermelho;60;34;6
+260;753696;6895458;1;2.06;lavoura;latossolo vermelho;55;35;10
+261;751937;6894847;1;2.22;lavoura;latossolo vermelho;55;33;12
